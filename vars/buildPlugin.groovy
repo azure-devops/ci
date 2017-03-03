@@ -1,58 +1,14 @@
 #!/usr/bin/env groovy
-
-def load_job_parms() {
-    def defaultShouldRunIntegrationTests = true
-    def defaultShouldRunWindowsBuildStep = true
-    def defaultShouldDogfood = false
-
-    if ( env.JOB_NAME.contains('jenkinsci') && env.BRANCH_NAME == "master" ) {
-        defaultShouldDogfood = true
-    }
-    if ( env.JOB_NAME.contains('azure-credentials') ) {
-        defaultShouldRunIntegrationTests = false
-        defaultShouldDogfood = false
-    }
-
-    properties([parameters([
-            booleanParam(defaultValue: defaultShouldRunIntegrationTests, description: '', name: 'run_integration_tests'),
-            booleanParam(defaultValue: defaultShouldRunWindowsBuildStep, description: '', name: 'run_windows_build_step'),
-            booleanParam(defaultValue: defaultShouldDogfood, description: '', name: 'dogfood')
-            ])])
-}
-
-def build_step(node_name) {
-    checkout scm
-    if (node_name == "Windows") {
-        bat 'mvn clean install package'
-    } else {
-        sh 'mvn clean install package'
-    }
-}
-
-def parallel_build() {
-    def nodes = [
-        [name: 'Linux', label:'ubuntu']
-        ]
-    if ( params.run_windows_build_step ) {
-        nodes.push( [name: 'Windows', label: 'win2016-dev'])
-    }
-    def builders = [failFast: true]
-    for (x in nodes) {
-        def n = x
-        builders[n.name] = {
-            node(n.label) {
-                build_step(n.name)
-            }
-        }
-    }
-    parallel builders
-}
+@Library('devopsCI')
+import com.microsoft.azure.devops.ci.utils
 
 def call() {
-    load_job_parms()
+    def ciUtils = new com.microsoft.azure.devops.ci.utils()
+    ciUtils.loadJobProperties()
+
     timeout(60) {
         stage('Build') {
-            parallel_build()
+            ciUtils.buildMavenInParallel()
         }
         node('ubuntu') {
             if ( params.run_integration_tests ) {
