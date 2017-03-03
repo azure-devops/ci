@@ -10,6 +10,7 @@ def load_job_parms() {
     }
     if ( env.JOB_NAME.contains('azure-credentials') ) {
         defaultShouldRunIntegrationTests = false
+        defaultShouldDogfood = false
     }
 
     properties([parameters([
