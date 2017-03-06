@@ -25,7 +25,7 @@ def loadJobProperties() {
     def defaultNotifystart = true
 
     if ( pluginName.equalsIgnoreCase("jenkinsci") && env.BRANCH_NAME == "master" ) {
-        defaultShouldDogfood = true
+        //defaultShouldDogfood = true
 
         defaultNotifyAborted = false
         defaultNotifyBackToNormal = false
