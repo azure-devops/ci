@@ -1,5 +1,4 @@
 #!/usr/bin/env groovy
-@Library('devopsCI')
 import com.microsoft.azure.devops.ci.utils
 
 def call() {

@@ -3,41 +3,7 @@
   <actions/>
   <description>{job-description}</description>
   <displayName>{job-display-name}</displayName>
-  <properties>
-    <org.jenkinsci.plugins.workflow.libs.FolderLibraries plugin="workflow-cps-global-lib@2.6">
-      <libraries>
-        <org.jenkinsci.plugins.workflow.libs.LibraryConfiguration>
-          <name>devopsCI</name>
-          <retriever class="org.jenkinsci.plugins.workflow.libs.SCMRetriever">
-            <scm class="hudson.plugins.git.GitSCM" plugin="git@3.0.5">
-              <configVersion>2</configVersion>
-              <userRemoteConfigs>
-                <hudson.plugins.git.UserRemoteConfig>
-                  <url>https://github.com/azure-devops/ci.git</url>
-                </hudson.plugins.git.UserRemoteConfig>
-              </userRemoteConfigs>
-              <branches>
-                <hudson.plugins.git.BranchSpec>
-                  <name>master</name>
-                </hudson.plugins.git.BranchSpec>
-              </branches>
-              <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
-              <submoduleCfg class="list"/>
-              <extensions/>
-            </scm>
-          </retriever>
-          <defaultVersion>master-1.0</defaultVersion>
-          <implicit>true</implicit>
-          <allowVersionOverride>true</allowVersionOverride>
-        </org.jenkinsci.plugins.workflow.libs.LibraryConfiguration>
-      </libraries>
-    </org.jenkinsci.plugins.workflow.libs.FolderLibraries>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig plugin="pipeline-model-definition@1.0.2">
-      <dockerLabel></dockerLabel>
-      <registry plugin="docker-commons@1.6"/>
-    </org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig>
-  </properties>
-  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.0.7">
+   <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.0.7">
     <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
   </folderViews>
   <healthMetrics>
