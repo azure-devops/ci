@@ -10,6 +10,7 @@ def call() {
             ciUtils.buildMavenInParallel()
         }
         node('ubuntu') {
+            checkout scm
             if ( params.run_integration_tests ) {
                 stage('Integration Tests') {
                     withCredentials([file(credentialsId: 'az_test_env', variable: 'load_test_env_script_location')]) {
