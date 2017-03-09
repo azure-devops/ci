@@ -24,7 +24,7 @@ def loadJobProperties() {
     def defaultNotifyUnstable = true
     def defaultNotifystart = true
 
-    if ( pluginName.equalsIgnoreCase("jenkinsci") && env.BRANCH_NAME == "master" ) {
+    if ( forkName.equalsIgnoreCase("jenkinsci") && env.BRANCH_NAME == "master" ) {
         defaultShouldDogfood = true
 
         defaultNotifyAborted = false
