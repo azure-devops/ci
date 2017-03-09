@@ -3,29 +3,50 @@ import com.microsoft.azure.devops.ci.utils
 
 def call() {
     def ciUtils = new com.microsoft.azure.devops.ci.utils()
+    testResultFilePatterns = ciUtils.getTestResultFilePatterns()
     ciUtils.loadJobProperties()
 
     timeout(60) {
-        stage('Build') {
-            ciUtils.buildMavenInParallel()
-        }
-        node('ubuntu') {
-            checkout scm
-            if ( params.run_integration_tests ) {
-                stage('Integration Tests') {
-                    withCredentials([file(credentialsId: 'az_test_env', variable: 'load_test_env_script_location')]) {
-                        load env.load_test_env_script_location
+        parallel failFast: false,
+        Windows: {
+            if ( params.run_windows_build_step ) {
+                node('win2016-dev') {
+                    checkout scm
+                    stage('Build') {
+                        bat 'mvn clean install package'
                     }
-                    sh 'mvn failsafe:integration-test package'
                 }
             }
-            stage('Pack Artifacts') {
-                sh 'cp target/*.hpi .'
-                archiveArtifacts '*.hpi'
+        },
+        Linux: {
+            node('ubuntu') {
+                checkout scm
+                stage('Build') {
+                    sh 'mvn clean install package'
+                }
+                if ( params.run_integration_tests ) {
+                    stage('Integration Tests') {
+                        withCredentials([file(credentialsId: 'az_test_env', variable: 'load_test_env_script_location')]) {
+                            load env.load_test_env_script_location
+                        }
+                        sh 'mvn failsafe:integration-test package'
+                    }
+                }
+                stage('Pack Artifacts') {
+                    stash includes: testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe + ', ' + testResultFilePatterns.findBugs, name: 'test_results'
+                    sh 'cp target/*.hpi .'
+                    archiveArtifacts '*.hpi'
+                }
             }
+        }
+
+        node('linux-dev') {
             stage ('Publish Test Results') {
-                junit '**/target/surefire-reports/*.xml, **/target/failsafe-reports/*.xml'
-                step([$class: 'FindBugsPublisher', canComputeNew: false, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', pattern: '**/target/findbugsXml.xml', unHealthy: ''])
+                sh 'rm -rf *'
+                unstash 'test_results'
+
+                junit testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe
+                step([$class: 'FindBugsPublisher', canComputeNew: false, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', pattern: testResultFilePatterns.findBugs, unHealthy: ''])
             }
             stage('Upload Bits') {
                 build job: 'Upload Bits',
@@ -36,7 +57,7 @@ def call() {
                         string(name: 'artifacts_pattern', value: '*.hpi'),
                         string(name: 'virtual_path', value: "${env.JOB_NAME}/${env.BUILD_NUMBER}")
                     ]
-                }
+            }
         }
 
         if ( params.dogfood) {

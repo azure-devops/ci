@@ -2,6 +2,13 @@
 
 package com.microsoft.azure.devops.ci;
 
+def getTestResultFilePatterns() {
+    return [
+        surefire: 'target/surefire-reports/*.xml',
+        failsafe: 'target/failsafe-reports/*.xml',
+        findBugs: 'target/findbugsXml.xml'
+    ];
+}
 /*
     Adds common job parameters and searches for an existing outlook webhook credential. If it finds one then it adds that hook to the job.
 */
@@ -39,7 +46,7 @@ def loadJobProperties() {
     }
 
     def webhook_url = ""
-    node('master') {
+    node {
         try {
         withCredentials([string(credentialsId: "notification_hook_" + pluginName + "_" + forkName, variable: 'hook_url')]) {
             webhook_url = env.hook_url
@@ -68,36 +75,5 @@ def loadJobProperties() {
             ]]]
         ])
 
-}
-
-def build_step(node_name) {
-    checkout scm
-    if (node_name == "Windows") {
-        bat 'mvn clean install package'
-    } else {
-        sh 'mvn clean install package'
-    }
-}
-
-/*
-    Build a maven project on multiple nodes
-*/
-def buildMavenInParallel() {
-    def nodes = [
-        [name: 'Linux', label:'ubuntu']
-        ]
-    if ( params.run_windows_build_step ) {
-        nodes.push( [name: 'Windows', label: 'win2016-dev'])
-    }
-    def builders = [failFast: true]
-    for (x in nodes) {
-        def n = x
-        builders[n.name] = {
-            node(n.label) {
-                build_step(n.name)
-            }
-        }
-    }
-    parallel builders
 }
 
