@@ -9,7 +9,17 @@ def getTestResultFilePatterns() {
         findBugs: 'target/findbugsXml.xml'
     ];
 }
-/*
+
+def isWindows() {
+    try {
+        sh 'echo "abc"'
+    } catch (all) {
+        return true;
+    }
+    return false;
+}
+
+/**
     Adds common job parameters and searches for an existing outlook webhook credential. If it finds one then it adds that hook to the job.
 */
 def loadJobProperties() {
@@ -74,6 +84,34 @@ def loadJobProperties() {
                 url: webhook_url
             ]]]
         ])
-
 }
 
+/**
+     * Run maven 'failsafe:integration-test' step in parallel on all the provided nodes.
+     * @param envList List of Map objects with these keys:
+                        label - the parallel branch label
+                        node_name - the node name
+                        environment - the credentials id for the groovy script that sets up the environment
+*/
+def runIntegrationTests(envList) {
+    Map tasks = [failFast: false]
+    for (int i = 0; i < envList.size(); ++i) {
+        String stageIdentifier = envList[i].label;
+        String nodeLabel = envList[i].node_name;
+        String testEnvCredentials = envList[i].environment;
+        tasks[stageIdentifier] = {
+            node(nodeLabel) {
+                withCredentials([file(credentialsId: testEnvCredentials, variable: 'load_test_env_script_location')]) {
+                    load env.load_test_env_script_location
+                    checkout scm
+                    if ( isWindows() ) {
+                        bat 'mvn install failsafe:integration-test'
+                    } else {
+                        sh 'mvn install failsafe:integration-test'
+                    }
+                }
+            }
+        }
+    }
+    return parallel(tasks)
+}

@@ -7,36 +7,47 @@ def call() {
     ciUtils.loadJobProperties()
 
     timeout(60) {
-        parallel failFast: false,
-        Windows: {
-            if ( params.run_windows_build_step ) {
-                node('win2016-dev') {
-                    checkout scm
-                    stage('Build') {
+        stage('Build') {
+            parallel failFast: true,
+            Windows: {
+                if ( params.run_windows_build_step ) {
+                    node('win2016-dev') {
+                        checkout scm
                         bat 'mvn clean install package'
                     }
                 }
-            }
-        },
-        Linux: {
-            node('ubuntu') {
-                checkout scm
-                stage('Build') {
+            },
+            Linux: {
+                node('ubuntu') {
+                    checkout scm
                     sh 'mvn clean install package'
-                }
-                if ( params.run_integration_tests ) {
-                    stage('Integration Tests') {
-                        withCredentials([file(credentialsId: 'az_test_env', variable: 'load_test_env_script_location')]) {
-                            load env.load_test_env_script_location
-                        }
-                        sh 'mvn failsafe:integration-test package'
-                    }
-                }
-                stage('Pack Artifacts') {
+
                     stash includes: testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe + ', ' + testResultFilePatterns.findBugs, name: 'test_results'
                     sh 'cp target/*.hpi .'
                     archiveArtifacts '*.hpi'
                 }
+            }
+        }
+
+        if ( params.run_integration_tests ) {
+            stage('Integration Tests') {
+                ciUtils.runIntegrationTests([
+                    [
+                        label: "Global Azure (Linux)",
+                        node_name: "ubuntu",
+                        environment: "az_test_env"
+                    ],
+                    [
+                        label: "Global Azure (Windows)",
+                        node_name: "win2016-dev",
+                        environment: "az_test_env2"
+                    ]/*,
+                    [
+                        label: "Mooncake",
+                        node_name: "linux-mooncake",
+                        environment: "az_test_mooncake"
+                    ]*/
+                ])
             }
         }
 

@@ -1,0 +1,3 @@
+<p>
+    Builds an Azure DevOps Jenkins plugin following a standard build/test/archive/dogfood pattern.
+</p>
