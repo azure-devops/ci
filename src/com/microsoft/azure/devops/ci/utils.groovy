@@ -28,7 +28,7 @@ def loadJobProperties() {
     def forkName = tokenizedJob[1]
     def branchName = tokenizedJob[2]
 
-    def defaultShouldRunIntegrationTests = true
+    def defaultShouldRunIntegrationTests = false
     def defaultShouldRunWindowsBuildStep = false // disable until we have a stable Windows node
     def defaultShouldDogfood = false
 
@@ -51,8 +51,8 @@ def loadJobProperties() {
         defaultNotifyUnstable = false
         defaultNotifystart = false
     }
-    if ( pluginName.equalsIgnoreCase("azure-credentials") ) {
-        defaultShouldRunIntegrationTests = false
+    if ( pluginName.equalsIgnoreCase("azure-vm-agents") ) {
+        defaultShouldRunIntegrationTests = true
     }
 
     def webhook_url = ""
