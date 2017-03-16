@@ -9,18 +9,18 @@ node('linux-dev') {
 
     checkout scm
     stage('Add Job') {
-      withCredentials([usernamePassword(credentialsId: 'upgrade', passwordVariable: 'REMOTE_JENKINS_PASSWORD', usernameVariable: 'REMOTE_JENKINS_USER')]) {
+      withCredentials([file(credentialsId: 'upgrade_key_file', variable: 'key_file_path')]) {
         sh 'sudo chmod +x scripts/create-job.sh'
-        sh 'scripts/create-job.sh -p ' + params.plugin_name + ' -f ' + params.fork_short_name + ' -g ' + params.git_url + ' -n \"' + params.job_name + '\" -j \"' + env.JENKINS_URL + '\"'
+        sh 'scripts/create-job.sh -p ' + params.plugin_name + ' -f ' + params.fork_short_name + ' -g ' + params.git_url + ' -n \"' + params.job_name + '\" -j \"' + env.JENKINS_URL + '\" -i \"' + env.key_file_path + '\"'
       }
     }
     if ( (params.hook_url?.trim()) as boolean) {
       stage('Add Notification Hook') {
-        withCredentials([usernamePassword(credentialsId: 'upgrade', passwordVariable: 'REMOTE_JENKINS_PASSWORD', usernameVariable: 'REMOTE_JENKINS_USER')]) {
+        withCredentials([file(credentialsId: 'upgrade_key_file', variable: 'key_file_path')]) {
           def cred_id = "notification_hook_" + params.plugin_name + "_" + params.fork_short_name
           def cred_description = "Notification Hook for " + params.plugin_name + " plugin (" + params.fork_short_name + " fork)"
           sh 'sudo chmod +x scripts/create-string-credentials.sh'
-          sh 'scripts/create-string-credentials.sh -c ' + cred_id + ' -s ' + params.hook_url + ' -d \"' + cred_description + '\" -j \"' + env.JENKINS_URL + '\"'
+          sh 'scripts/create-string-credentials.sh -c ' + cred_id + ' -s ' + params.hook_url + ' -d \"' + cred_description + '\" -j \"' + env.JENKINS_URL + '\" -i \"' + env.key_file_path + '\"'
         }
       }
   }

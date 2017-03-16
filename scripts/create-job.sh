@@ -8,8 +8,7 @@ Arguments
   --fork_name|-f           [Required]: Fork name
   --git_url|-g             [Required]: Git url
   --jenkins_url|-j         [Required]: Jenkins url
-  --jenkins_user_name|-ju            : Jenkins user name (if omitted, the script will use this env variable: REMOTE_JENKINS_USER)
-  --jenkins_password|-jp             : Jenkins password  (if omitted, the script will use this env variable: REMOTE_JENKINS_PASSWORD)
+  --private_key|-i                   : SSH private key file (if omitted, the script will use this env variable: REMOTE_JENKINS_PEM)
   --job_description|-d               : Job description (by default it's 'Building <fork_name> for <plugin_name> plugin')
   --job_display_name|-n              : Job display name (by default it's '<fork_name>')
 EOF
@@ -49,12 +48,8 @@ do
       jenkins_url="$1"
       shift
       ;;
-    --jenkins_user_name|-ju)
-      REMOTE_JENKINS_USER="$1"
-      shift
-      ;;
-    --jenkins_password|-jp)
-      REMOTE_JENKINS_PASSWORD="$1"
+    --private_key|-i)
+      REMOTE_JENKINS_PEM="$1"
       shift
       ;;
     --job_description|-d)
@@ -75,8 +70,7 @@ throw_if_empty --plugin_name $plugin_name
 throw_if_empty --fork_name $fork_name
 throw_if_empty --git_url $git_url
 throw_if_empty --jenkins_url $jenkins_url
-throw_if_empty --jenkins_user_name $REMOTE_JENKINS_USER
-throw_if_empty --jenkins_password $REMOTE_JENKINS_PASSWORD
+throw_if_empty --private_key $REMOTE_JENKINS_PEM
 
 job_name="${plugin_name}/${fork_name}"
 if [ -z "$job_display_name" ]
@@ -109,6 +103,6 @@ function retry_until_successful {
 
 retry_until_successful wget ${jenkins_url}/jnlpJars/jenkins-cli.jar -O jenkins-cli.jar
 
-echo "${job_xml}" | java -jar jenkins-cli.jar -s ${jenkins_url} create-job "${job_name}" --username ${REMOTE_JENKINS_USER} --password ${REMOTE_JENKINS_PASSWORD}
+echo "${job_xml}" | java -jar jenkins-cli.jar -s "${jenkins_url}" -i "${REMOTE_JENKINS_PEM}" create-job "${job_name}"
 
 rm jenkins-cli.jar

@@ -7,8 +7,7 @@ Arguments
   --credentials_id|-c          [Required]: Credentials ID
   --credentials_secret|-s      [Required]: Secret
   --jenkins_url|-j             [Required]: Jenkins url
-  --jenkins_user_name|-ju                : Jenkins user name (if omitted, the script will use this env variable: REMOTE_JENKINS_USER)
-  --jenkins_password|-jp                 : Jenkins password  (if omitted, the script will use this env variable: REMOTE_JENKINS_PASSWORD)
+  --private_key|-i                       : SSH private key file (if omitted, the script will use this env variable: REMOTE_JENKINS_PEM)
   --credentials_description|-d           : Description (by default it's '<credentials_id>')
 EOF
 }
@@ -43,16 +42,12 @@ do
       credentials_description="$1"
       shift
       ;;
+    --private_key|-i)
+      REMOTE_JENKINS_PEM="$1"
+      shift
+      ;;
     --jenkins_url|-j)
       jenkins_url="$1"
-      shift
-      ;;
-    --jenkins_user_name|-ju)
-      REMOTE_JENKINS_USER="$1"
-      shift
-      ;;
-    --jenkins_password|-jp)
-      REMOTE_JENKINS_PASSWORD="$1"
       shift
       ;;
     *)
@@ -64,8 +59,7 @@ done
 throw_if_empty --credentials_id $credentials_id
 throw_if_empty --credentials_secret $credentials_secret
 throw_if_empty --jenkins_url $jenkins_url
-throw_if_empty --jenkins_user_name $REMOTE_JENKINS_USER
-throw_if_empty --jenkins_password $REMOTE_JENKINS_PASSWORD
+throw_if_empty --private_key $REMOTE_JENKINS_PEM
 
 if [ -z "$credentials_description" ]
 then
@@ -92,6 +86,6 @@ function retry_until_successful {
 
 retry_until_successful wget ${jenkins_url}/jnlpJars/jenkins-cli.jar -O jenkins-cli.jar
 
-echo "${credentials_xml}" | java -jar jenkins-cli.jar -s ${jenkins_url} create-credentials-by-xml SystemCredentialsProvider::SystemContextResolver::jenkins "(global)" --username ${REMOTE_JENKINS_USER} --password ${REMOTE_JENKINS_PASSWORD}
+echo "${credentials_xml}" | java -jar jenkins-cli.jar -s "${jenkins_url}" -i "${REMOTE_JENKINS_PEM}" create-credentials-by-xml SystemCredentialsProvider::SystemContextResolver::jenkins "(global)"
 
 rm jenkins-cli.jar
