@@ -36,12 +36,12 @@ def call() {
                         label: "Global Azure (Linux)",
                         node_name: "ubuntu",
                         environment: "az_test_env"
-                    ],
+                    ]/*,
                     [
                         label: "Global Azure (Windows)",
                         node_name: "win2016-dev",
                         environment: "az_test_env2"
-                    ]/*,
+                    ]*//*,
                     [
                         label: "Mooncake",
                         node_name: "linux-mooncake",
