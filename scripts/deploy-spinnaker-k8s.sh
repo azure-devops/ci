@@ -25,7 +25,7 @@ function throw_if_empty() {
 }
 
 user_name="spinuser"
-region="westus"
+region="eastus"
 
 while [[ $# > 0 ]]
 do
