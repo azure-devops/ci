@@ -29,7 +29,7 @@ def loadJobProperties() {
     def branchName = tokenizedJob[2]
 
     def defaultShouldRunIntegrationTests = false
-    def defaultShouldRunWindowsBuildStep = false // disable until we have a stable Windows node
+    def defaultShouldRunWindowsBuildStep = true
     def defaultShouldDogfood = false
 
     def defaultNotifyAborted = true
