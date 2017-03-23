@@ -6,7 +6,7 @@ node('spin-k8s-test') {
 
     def venv_name= env.JOB_BASE_NAME + '-venv'
     sh 'virtualenv ' + venv_name
-    def activate_venv = '. ' + env.WORKSPACE + '/' + venv_name + '/bin/activate;'
+    def activate_venv = '. "' + env.WORKSPACE + '/' + venv_name + '/bin/activate";'
 
     scenario_name = sh(returnStdout: true, script: 'echo "' + env.JOB_BASE_NAME + '$(uuidgen | sed \'s/-//g\')"').trim()
 
