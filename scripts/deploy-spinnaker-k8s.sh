@@ -108,7 +108,7 @@ EOF
 )
 
 az login --service-principal -u $client_id -p $client_secret --tenant $tenant_id
-az group create -n $scenario_name -l $region --tags "CleanTime=$(date -v +${keep_alive_hours}H +%s)"
+az group create -n $scenario_name -l $region --tags "CleanTime=$(date -d "+${keep_alive_hours} hours" +%s)"
 deployment_data=$(az group deployment create -g $scenario_name --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/spinnaker-vm-to-kubernetes/azuredeploy.json --parameters "$parameters")
 
 provisioningState=$(echo "$deployment_data" | python -c "import json, sys; data=json.load(sys.stdin);print data['properties']['provisioningState']")
