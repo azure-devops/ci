@@ -5,12 +5,13 @@ function print_usage() {
 Command
   $0
 Arguments
-  --scenario_name|-sn [Required]: Scenario name
-  --client_id|-ci     [Required]: Service principal client id
-  --client_secret|-cs [Required]: Service principal client secret
-  --tenant_id|-ti     [Required]: Tenant id
-  --user_name|-un               : User name
-  --region|-r                   : Region
+  --scenario_name|-sn     [Required]: Scenario name
+  --client_id|-ci         [Required]: Service principal client id
+  --client_secret|-cs     [Required]: Service principal client secret
+  --tenant_id|-ti         [Required]: Tenant id
+  --user_name|-un                   : User name
+  --region|-r                       : Region
+  --keep_alive_hours|-kah           : The max number of hours to keep this deployment, defaulted to 48
 EOF
 }
 
@@ -26,6 +27,7 @@ function throw_if_empty() {
 
 user_name="spinuser"
 region="eastus"
+keep_alive_hours="48"
 
 while [[ $# > 0 ]]
 do
@@ -56,6 +58,10 @@ do
       region="$1"
       shift
       ;;
+    --keep_alive_hours|-kah)
+      keep_alive_hours="$1"
+      shift
+      ;;
     --help|-help|-h)
       print_usage
       exit 13
@@ -72,6 +78,7 @@ throw_if_empty --client_secret $client_secret
 throw_if_empty --tenant_id $tenant_id
 throw_if_empty --user_name $user_name
 throw_if_empty --region $region
+throw_if_empty --keep_alive_hours $keep_alive_hours
 
 # Create ssh key
 mkdir $scenario_name
@@ -101,7 +108,7 @@ EOF
 )
 
 az login --service-principal -u $client_id -p $client_secret --tenant $tenant_id
-az group create -n $scenario_name -l $region
+az group create -n $scenario_name -l $region --tags "CleanTime=$(date -v +${keep_alive_hours}H +%s)"
 deployment_data=$(az group deployment create -g $scenario_name --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/spinnaker-vm-to-kubernetes/azuredeploy.json --parameters "$parameters")
 
 provisioningState=$(echo "$deployment_data" | python -c "import json, sys; data=json.load(sys.stdin);print data['properties']['provisioningState']")
