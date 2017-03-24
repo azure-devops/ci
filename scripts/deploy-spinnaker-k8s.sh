@@ -8,7 +8,7 @@ Arguments
   --scenario_name|-sn     [Required]: Scenario name
   --client_id|-ci         [Required]: Service principal client id
   --client_secret|-cs     [Required]: Service principal client secret
-  --tenant_id|-ti         [Required]: Tenant id
+  --tenant_id|-ti                   : Tenant id, defaulted to the Microsoft tenant id
   --user_name|-un                   : User name
   --region|-r                       : Region
   --keep_alive_hours|-kah           : The max number of hours to keep this deployment, defaulted to 48
@@ -25,6 +25,7 @@ function throw_if_empty() {
   fi
 }
 
+tenant_id="72f988bf-86f1-41af-91ab-2d7cd011db47"
 user_name="spinuser"
 region="eastus"
 keep_alive_hours="48"
