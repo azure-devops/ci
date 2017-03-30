@@ -1,36 +1,30 @@
-def linux_build() {
-    sh 'echo "works"'
-}
-def windows_build() {
-    bat 'echo \'works\''
-}
-timeout(60) {
-    stage('Verify VMAgents templates') {
-        parallel 'Custom Ubuntu without init script': {
-            node('s-cust-no-init-ubuntu') {
-                linux_build()
+#!groovy
+pipeline {
+    agent none
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+    }
+    stages {
+        stage('Verify VMAgents templates') {
+            steps {
+                 parallel ( failFast: true,
+                    'Custom Ubuntu without init script': {
+                        runSanityChecks('s-cust-no-init-ubuntu')
+                    },
+                    /* Temporarily disable 'Custom Ubuntu with init script' because the vm agent template is not configured correctly.
+                    'Custom Ubuntu with init script': {
+                        runSanityChecks('s-cust-init-ubuntu')
+                    },*/
+                    'Reference Ubuntu with init script': {
+                        runSanityChecks('s-ref-ubuntu')
+                    },
+                    'Custom Windows with init script': {
+                        runSanityChecks('s-cust-windows')
+                    },
+                    'Reference Windows with init script': {
+                        runSanityChecks('s-ref-windows')
+                    })
             }
-        },
-        /*'Custom Ubuntu with init script': {
-            node('s-cust-init-ubuntu') {
-                linux_build()
-            }
-        },*/
-        'Reference Ubuntu with init script': {
-            node('s-ref-ubuntu') {
-                linux_build()
-            }
-        },
-        'Custom Windows with init script': {
-            node('s-cust-windows') {
-                windows_build()
-            }
-        },
-        'Reference Windows with init script': {
-            node('s-ref-windows') {
-                windows_build()
-            }
-        },
-        failFast: true
+        }
     }
 }
