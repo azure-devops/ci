@@ -27,8 +27,8 @@ node('spin-k8s-test') {
         stage('Deploy Quickstart Template') {
             def script_path = 'devopsci/scripts/deploy-spinnaker-k8s.sh'
             sh 'sudo chmod +x ' + script_path
-            withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'client_secret', usernameVariable: 'client_id')]) {
-                sh script_path + ' -sn ' + scenario_name + ' -ci ' + env.client_id + ' -cs ' + env.client_secret
+            withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
+                sh script_path + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key
             }
         }
 

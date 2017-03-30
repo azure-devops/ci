@@ -5,8 +5,8 @@ function print_usage() {
 Command
   $0
 Arguments
-  --client_id|-ci         [Required]: Service principal client id
-  --client_secret|-cs     [Required]: Service principal client secret
+  --app_id|-ai            [Required]: Service principal app id
+  --app_key|-ak           [Required]: Service principal app key
   --tenant_id|-ti                   : Tenant id, defaulted to the Microsoft tenant id
 EOF
 }
@@ -28,12 +28,12 @@ do
   key="$1"
   shift
   case $key in
-    --client_id|-ci)
-      client_id="$1"
+    --app_id|-ai)
+      app_id="$1"
       shift
       ;;
-    --client_secret|-cs)
-      client_secret="$1"
+    --app_key|-ak)
+      app_key="$1"
       shift
       ;;
     --tenant_id|-ti)
@@ -50,11 +50,11 @@ do
   esac
 done
 
-throw_if_empty --client_id $client_id
-throw_if_empty --client_secret $client_secret
+throw_if_empty --app_id $app_id
+throw_if_empty --app_key $app_key
 throw_if_empty --tenant_id $tenant_id
 
-az login --service-principal -u $client_id -p $client_secret --tenant $tenant_id
+az login --service-principal -u $app_id -p $app_key --tenant $tenant_id
 
 resource_groups=($(az group list | python -c "
 import json, sys;
