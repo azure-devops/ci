@@ -6,8 +6,8 @@ Command
   $0
 Arguments
   --scenario_name|-sn     [Required]: Scenario name
-  --client_id|-ci         [Required]: Service principal client id
-  --client_secret|-cs     [Required]: Service principal client secret
+  --app_id|-ai            [Required]: Service principal app id
+  --app_key|-ak           [Required]: Service principal app key
   --tenant_id|-ti                   : Tenant id, defaulted to the Microsoft tenant id
   --user_name|-un                   : User name
   --region|-r                       : Region
@@ -39,12 +39,12 @@ do
       scenario_name="$1"
       shift
       ;;
-    --client_id|-ci)
-      client_id="$1"
+    --app_id|-ai)
+      app_id="$1"
       shift
       ;;
-    --client_secret|-cs)
-      client_secret="$1"
+    --app_key|-ak)
+      app_key="$1"
       shift
       ;;
     --tenant_id|-ti)
@@ -74,8 +74,8 @@ do
 done
 
 throw_if_empty --scenario_name $scenario_name
-throw_if_empty --client_id $client_id
-throw_if_empty --client_secret $client_secret
+throw_if_empty --app_id $app_id
+throw_if_empty --app_key $app_key
 throw_if_empty --tenant_id $tenant_id
 throw_if_empty --user_name $user_name
 throw_if_empty --region $region
@@ -98,17 +98,17 @@ parameters=$(cat <<EOF
     "spinnakerDnsLabelPrefix": {
         "value": "$scenario_name"
     },
-    "servicePrincipalClientId": {
-        "value": "$client_id"
+    "servicePrincipalAppId": {
+        "value": "$app_id"
     },
-    "servicePrincipalClientSecret": {
-        "value": "$client_secret"
+    "servicePrincipalAppKey": {
+        "value": "$app_key"
     }
 }
 EOF
 )
 
-az login --service-principal -u $client_id -p $client_secret --tenant $tenant_id
+az login --service-principal -u $app_id -p $app_key --tenant $tenant_id
 az group create -n $scenario_name -l $region --tags "CleanTime=$(date -d "+${keep_alive_hours} hours" +%s)"
 deployment_data=$(az group deployment create -g $scenario_name --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/spinnaker-vm-to-kubernetes/azuredeploy.json --parameters "$parameters")
 
