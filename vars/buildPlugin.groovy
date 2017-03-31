@@ -57,7 +57,7 @@ def call() {
                 unstash 'test_results'
                 unstash 'integration_test_results'
 
-                junit testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe
+                junit healthScaleFactor: 100, testResults: testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe
                 step([$class: 'FindBugsPublisher', canComputeNew: false, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', pattern: testResultFilePatterns.findBugs, unHealthy: ''])
             }
             stage('Upload Bits') {

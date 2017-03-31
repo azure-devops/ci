@@ -105,10 +105,13 @@ def runIntegrationTests(envList) {
                 withCredentials([file(credentialsId: testEnvCredentials, variable: 'load_test_env_script_location')]) {
                     load env.load_test_env_script_location
                     checkout scm
-                    if ( isWindows() ) {
-                        bat 'mvn install failsafe:integration-test'
-                    } else {
-                        sh 'mvn install failsafe:integration-test'
+                    //set the default integration test timeout to 20 minutes because they are very slow
+                    withEnv(["_JAVA_OPTIONS=-Djenkins.test.timeout=1200"]) {
+                        if ( isWindows() ) {
+                            bat 'mvn install failsafe:integration-test'
+                        } else {
+                            sh 'mvn install failsafe:integration-test'
+                        }
                     }
                     stash includes: testResultFilePatterns.failsafe, name: 'integration_test_results'
                 }
