@@ -109,6 +109,7 @@ def runIntegrationTests(envList) {
                     } else {
                         sh 'mvn install failsafe:integration-test'
                     }
+                    stash includes: testResultFilePatterns.failsafe, name: 'integration_test_results'
                 }
             }
         }
