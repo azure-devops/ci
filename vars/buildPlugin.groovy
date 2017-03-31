@@ -22,7 +22,7 @@ def call() {
                     checkout scm
                     sh 'mvn clean install package'
 
-                    stash includes: testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe + ', ' + testResultFilePatterns.findBugs, name: 'test_results'
+                    stash includes: testResultFilePatterns.surefire + ', ' + testResultFilePatterns.findBugs, name: 'test_results'
                     sh 'cp target/*.hpi .'
                     archiveArtifacts '*.hpi'
                 }
@@ -55,6 +55,7 @@ def call() {
             stage ('Publish Test Results') {
                 sh 'rm -rf *'
                 unstash 'test_results'
+                unstash 'integration_test_results'
 
                 junit testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe
                 step([$class: 'FindBugsPublisher', canComputeNew: false, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', pattern: testResultFilePatterns.findBugs, unHealthy: ''])
