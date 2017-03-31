@@ -9,8 +9,8 @@ node('spin-k8s-test') {
         stage('Delete deployments') {
             def script_path = 'scripts/clean-deployments.sh'
             sh 'sudo chmod +x ' + script_path
-            withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'client_secret', usernameVariable: 'client_id')]) {
-                sh script_path + ' -ci ' + env.client_id + ' -cs ' + env.client_secret
+            withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
+                sh script_path + ' -ai ' + env.app_id + ' -ak ' + env.app_key
             }
         }
     } catch (e) {
