@@ -51,7 +51,8 @@ def loadJobProperties() {
         defaultNotifyUnstable = false
         defaultNotifystart = false
     }
-    if ( pluginName.equalsIgnoreCase("azure-vm-agents") ) {
+
+    if ( !pluginName.equalsIgnoreCase("azure-credential") ) {
         defaultShouldRunIntegrationTests = true
     }
 
