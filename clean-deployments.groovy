@@ -1,4 +1,4 @@
-node('spin-k8s-test') {
+node('quickstart-template') {
     try {
         properties([
             pipelineTriggers([cron('@daily')])
