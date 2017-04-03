@@ -53,13 +53,13 @@ node('quickstart-template') {
                     def activate_venv = '. "' + env.WORKSPACE + '/' + venv_name + '/bin/activate";'
                     sh 'virtualenv ' + venv_name
 
-                    dir('spinnaker-k8s-test') {
-                        dir('citestpackage') {
-                            // Eventually this repo will be its own python package and we won't have to install it separately
-                            git 'https://github.com/google/citest.git'
-                            sh activate_venv + 'pip install -r requirements.txt'
-                        }
+                    dir('citestpackage') {
+                        // Eventually this repo will be its own python package and we won't have to install it separately
+                        git 'https://github.com/google/citest.git'
+                        sh activate_venv + 'pip install -r requirements.txt'
+                    }
 
+                    dir('spinnaker-k8s-test') {
                         git 'https://github.com/spinnaker/spinnaker.git'
 
                         dir('testing/citest') {
