@@ -52,7 +52,7 @@ def loadJobProperties() {
         defaultNotifystart = false
     }
 
-    if ( !pluginName.equalsIgnoreCase("azure-credential") ) {
+    if ( !pluginName.equalsIgnoreCase("azure-credentials") ) {
         defaultShouldRunIntegrationTests = true
     }
 
