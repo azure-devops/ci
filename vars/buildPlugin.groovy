@@ -55,7 +55,9 @@ def call() {
             stage ('Publish Test Results') {
                 sh 'rm -rf *'
                 unstash 'test_results'
-                unstash 'integration_test_results'
+                if ( params.run_integration_tests ) {
+                    unstash 'integration_test_results'
+                }
 
                 junit healthScaleFactor: 100, testResults: testResultFilePatterns.surefire + ', ' + testResultFilePatterns.failsafe
                 step([$class: 'FindBugsPublisher', canComputeNew: false, defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', pattern: testResultFilePatterns.findBugs, unHealthy: ''])
