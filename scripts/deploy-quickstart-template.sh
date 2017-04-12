@@ -9,7 +9,6 @@ Arguments
   --template_name|-tn     [Required]: Quickstart template name
   --app_id|-ai            [Required]: Service principal app id
   --app_key|-ak           [Required]: Service principal app key
-  --connection_string|cs  [Required]: Storage connection string to track correlation ids
   --tenant_id|-ti                   : Tenant id, defaulted to the Microsoft tenant id
   --user_name|-un                   : User name
   --region|-r                       : Region
@@ -68,10 +67,6 @@ do
       app_key="$1"
       shift
       ;;
-    --connection_string|-cs)
-      connection_string="$1"
-      shift
-      ;;
     --tenant_id|-ti)
       tenant_id="$1"
       shift
@@ -102,7 +97,6 @@ throw_if_empty --scenario_name $scenario_name
 throw_if_empty --template_name $template_name
 throw_if_empty --app_id $app_id
 throw_if_empty --app_key $app_key
-throw_if_empty --connection_string "$connection_string"
 throw_if_empty --tenant_id $tenant_id
 throw_if_empty --user_name $user_name
 throw_if_empty --region $region
@@ -144,31 +138,6 @@ provisioning_state=$(echo "$deployment_data" | python -c "import json, sys; data
 if [ "$provisioning_state" != "Succeeded" ]; then
     echo "Deployment failed." 1>&2
     exit -1
-fi
-
-correlation_ids_file="correlationIds.csv"
-correlation_id=$(echo "$deployment_data" | python -c "import json, sys; data=json.load(sys.stdin);print data['properties']['correlationId']")
-# TODO(erijiz) Find out what hash the quickstart team is using and use the same one
-azuredeploymd5=$(curl -s "${template_location}${template_name}/azuredeploy.json" | md5sum | awk '{print $1}')
-
-# TODO(erijiz) Refactor to use azure storage plugin once it's pipeline ready
-result=$(az storage container exists --name $template_name --connection-string "$connection_string" --query "exists")
-if [[ "$result" != "true" ]]; then
-  echo 'Creating storage container for template...'
-  az storage container create --name $template_name --connection-string "$connection_string"
-  echo "date,correlationId,azuredeploymd5" >> "$scenario_name/$correlation_ids_file"
-else
-  echo 'Downloading list of correlation ids...'
-  az storage blob download -c $template_name -f "$scenario_name/$correlation_ids_file" -n $correlation_ids_file --connection-string "$connection_string"
-fi
-
-last_entry=$(tail -1 "$scenario_name/$correlation_ids_file")
-if [[ "$last_entry" != *"$azuredeploymd5"* ]]; then
-  echo 'Detected a change in the contents of azuredeploy.json. Updating correlation id file in storage account...'
-  echo "$(date +%m/%d/%Y),$correlation_id,$azuredeploymd5" >> "$scenario_name/$correlation_ids_file"
-  az storage blob upload -c $template_name -f "$scenario_name/$correlation_ids_file" -n $correlation_ids_file --connection-string "$connection_string"
-else
-  echo 'No change in azuredeploy.json. Not updating correlation id file.'
 fi
 
 # Download kubernetes config if applicable
