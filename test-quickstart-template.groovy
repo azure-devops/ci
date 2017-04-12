@@ -21,9 +21,7 @@ node('quickstart-template') {
             def script_path = 'scripts/deploy-quickstart-template.sh'
             sh 'sudo chmod +x ' + script_path
             withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
-                withCredentials([string(credentialsId: 'QsStorageConnectionString', variable: 'connection_string')]) {
-                    sh script_path + ' -tn ' + env.JOB_BASE_NAME + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key + ' -cs "' + env.connection_string + '"'
-                }
+                sh script_path + ' -tn ' + env.JOB_BASE_NAME + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key
             }
         }
 
