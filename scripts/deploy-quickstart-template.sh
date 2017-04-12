@@ -151,8 +151,9 @@ fqdn=$(echo "$deployment_data" | python -c "import json, sys;data=json.load(sys.
 # Setup an ssh key on the VMs if the template didn't do it by default
 # (it's more secure than programatically ssh-ing with a password and let's us ssh in a consistent manner)
 if [[ "$parameters" != *"sshPublicKey"* ]]; then
-  echo 'Ssh key cannot be setup until this bug is shipped: https://github.com/Azure/azure-cli/issues/2616'
-  # az vm user update -u "$user_name" --ssh-key-value "$temp_pub_key" -n "${vm_prefix}VM" -g "$scenario_name"
+  echo 'Setting up ssh key access for vm...'
+  az vm user reset-ssh -n "${vm_prefix}VM" -g "$scenario_name" # The azure-jenkins template fails to setup the key for some reason unless we do this first
+  az vm user update -u "$user_name" --ssh-key-value "$temp_pub_key" -n "${vm_prefix}VM" -g "$scenario_name"
 fi
 
 # Setup ssh port forwarding
