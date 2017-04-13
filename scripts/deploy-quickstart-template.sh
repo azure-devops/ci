@@ -146,7 +146,12 @@ if [[ "$template_name" == *"k8s"* ]]; then
   az acs kubernetes get-credentials --resource-group=$scenario_name --name=containerservice-$scenario_name --ssh-key-file=$temp_key_path
 fi
 
-fqdn=$(echo "$deployment_data" | python -c "import json, sys;data=json.load(sys.stdin);print data['properties']['outputs']['${vm_prefix}VmFQDN']['value']")
+# Jenkins templates don't have the VmFQDN, we need to get it from the jenkinsURL output
+if [[ "$template_name" == *"jenkins"* ]]; then
+  fqdn=$(echo "$deployment_data" | python -c "import json, sys, re;data=json.load(sys.stdin);print re.findall(r'https*://(.*)' ,data['properties']['outputs']['jenkinsURL']['value'])[0]")
+else
+  fqdn=$(echo "$deployment_data" | python -c "import json, sys;data=json.load(sys.stdin);print data['properties']['outputs']['${vm_prefix}VmFQDN']['value']")
+fi
 
 # Setup an ssh key on the VMs if the template didn't do it by default
 # (it's more secure than programatically ssh-ing with a password and let's us ssh in a consistent manner)
