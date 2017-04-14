@@ -8,6 +8,11 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get update -y --fix-missing
 # Install git
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
 
+if !(command -v git >/dev/null); then
+  echo "Failed to install git on agent" 1>&2
+  exit -1
+fi
+
 # Install python
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-pip python-dev libffi-dev libssl-dev
 sudo pip install virtualenv
@@ -20,7 +25,17 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y azure-cli
 
+if !(command -v az >/dev/null); then
+  echo "Failed to install az cli on agent" 1>&2
+  exit -1
+fi
+
 # Install Kubernetes CLI
 kubectl_file="/usr/local/bin/kubectl"
 sudo curl -L -o $kubectl_file https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 sudo chmod +x $kubectl_file
+
+if !(command -v kubectl >/dev/null); then
+  echo "Failed to install kubectl on agent" 1>&2
+  exit -1
+fi
