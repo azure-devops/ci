@@ -1,7 +1,8 @@
 node('quickstart-template') {
     try {
         properties([
-            pipelineTriggers([cron('@daily')])
+            pipelineTriggers([cron('@daily')]),
+            buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '14', numToKeepStr: ''))
         ])
 
         def run_basic_spinnaker_test = env.JOB_BASE_NAME.contains("spinnaker")
