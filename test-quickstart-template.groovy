@@ -1,31 +1,8 @@
 node('quickstart-template') {
     try {
         properties([
-            pipelineTriggers([cron('@daily'), pollSCM('* * * * *')])
+            pipelineTriggers([cron('@daily')])
         ])
-
-        checkout([
-            $class: 'GitSCM',
-            branches: [[name: '*/master']],
-            doGenerateSubmoduleConfigurations: false,
-            extensions: [[$class: 'PathRestriction', excludedRegions: '', includedRegions: '''test-quickstart-template.groovy
-scripts/deploy-quickstart-template.sh''']],
-            submoduleCfg: [],
-            userRemoteConfigs: [[url: 'https://github.com/azure-devops/ci.git']]
-        ])
-
-        // We're not using this repo for anything other than the triggers. TODO(erijiz): Modify the deploy script to use these files rather than downloading them
-        dir('azure-quickstart-templates') {
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: '*/master']],
-                doGenerateSubmoduleConfigurations: false,
-                extensions: [[$class: 'PathRestriction', excludedRegions: '''.*.md
-.*metadata.json''', includedRegions: (env.JOB_BASE_NAME + '/.*')]],
-                submoduleCfg: [],
-                userRemoteConfigs: [[url: 'https://github.com/Azure/azure-quickstart-templates.git']]
-            ])
-        }
 
         def run_basic_spinnaker_test = env.JOB_BASE_NAME.contains("spinnaker")
         def run_spinnaker_k8s_test = env.JOB_BASE_NAME.contains("spinnaker") && env.JOB_BASE_NAME.contains("k8s")
@@ -33,6 +10,8 @@ scripts/deploy-quickstart-template.sh''']],
         def scenario_name = "qstest" + UUID.randomUUID().toString().replaceAll("-", "")
 
         stage('Deploy Quickstart Template') {
+            checkout scm
+
             def script_path = 'scripts/deploy-quickstart-template.sh'
             sh 'sudo chmod +x ' + script_path
             withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
@@ -67,12 +46,12 @@ scripts/deploy-quickstart-template.sh''']],
 
                 dir('citestpackage') {
                     // Eventually this repo will be its own python package and we won't have to install it separately
-                    git poll: false, url: 'https://github.com/google/citest.git'
+                    git 'https://github.com/google/citest.git'
                     sh activate_venv + 'pip install -r requirements.txt'
                 }
 
                 dir('spinnaker-k8s-test') {
-                    git poll: false, url: 'https://github.com/spinnaker/spinnaker.git'
+                    git 'https://github.com/spinnaker/spinnaker.git'
 
                     dir('testing/citest') {
                         sh activate_venv + 'pip install -r requirements.txt;PYTHONPATH=.:spinnaker python tests/kube_smoke_test.py --native_host=localhost --spinnaker_kubernetes_account=my-kubernetes-account'
