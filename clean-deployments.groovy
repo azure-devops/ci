@@ -1,7 +1,8 @@
 node('quickstart-template') {
     try {
         properties([
-            pipelineTriggers([cron('@daily')])
+            pipelineTriggers([cron('@daily')]),
+            buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '14', numToKeepStr: ''))
         ])
 
         checkout scm
