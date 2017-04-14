@@ -55,6 +55,8 @@ node('quickstart-template') {
 
                     dir('testing/citest') {
                         sh activate_venv + 'pip install -r requirements.txt;PYTHONPATH=.:spinnaker python tests/kube_smoke_test.py --native_host=localhost --spinnaker_kubernetes_account=my-kubernetes-account'
+
+                        archiveArtifacts 'kube_smoke_test.*'
                     }
                 }
             }
