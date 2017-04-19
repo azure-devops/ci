@@ -20,7 +20,7 @@ function throw_if_empty() {
   local name="$1"
   local value="$2"
   if [ -z "$value" ]; then
-    echo "Parameter '$name' cannot be empty." 1>&2
+    >&2 echo "Parameter '$name' cannot be empty."
     print_usage
     exit -1
   fi
@@ -88,7 +88,7 @@ do
       exit 13
       ;;
     *)
-      echo "ERROR: Unknown argument '$key' to script '$0'" 1>&2
+      >&2 echo "ERROR: Unknown argument '$key' to script '$0'"
       exit -1
   esac
 done
@@ -105,7 +105,7 @@ throw_if_empty --keep_alive_hours $keep_alive_hours
 # Create ssh key
 mkdir $scenario_name
 temp_key_path=$scenario_name/temp_key
-ssh-keygen -t rsa -N "" -f $temp_key_path -V "+1d"
+>&2 ssh-keygen -t rsa -N "" -f $temp_key_path -V "+1d"
 temp_pub_key=$(cat ${temp_key_path}.pub)
 
 if [[ "$template_name" == *"spinnaker"* && "$template_name" == *"jenkins"* ]]; then
@@ -115,7 +115,7 @@ elif [[ "$template_name" == *"spinnaker"* ]]; then
 elif [[ "$template_name" == *"jenkins"* ]]; then
   vm_prefix="jenkins"
 else
-  echo "ERROR: Unrecognized template '$template_name'." 1>&2
+  >&2 echo "ERROR: Unrecognized template '$template_name'."
   exit -1
 fi
 
@@ -127,59 +127,32 @@ parameters=$(try_replace_parameter "$parameters" "sshPublicKey" "$temp_pub_key")
 parameters=$(try_replace_parameter "$parameters" "adminPassword" "$(uuidgen -r)")
 parameters=$(try_replace_parameter "$parameters" "${vm_prefix}DnsPrefix" "$scenario_name")
 
-az login --service-principal -u $app_id -p $app_key --tenant $tenant_id
-echo "Creating resource group '$scenario_name'..."
-az group create -n $scenario_name -l $region --tags "CleanTime=$(date -d "+${keep_alive_hours} hours" +%s)"
-echo "Deploying template '$template_name'..."
+>&2 az login --service-principal -u $app_id -p $app_key --tenant $tenant_id
+>&2 echo "Creating resource group '$scenario_name'..."
+>&2 az group create -n $scenario_name -l $region --tags "CleanTime=$(date -d "+${keep_alive_hours} hours" +%s)"
+>&2 echo "Deploying template '$template_name'..."
 deployment_data=$(az group deployment create -g $scenario_name --template-uri ${template_location}${template_name}/azuredeploy.json --parameters "$parameters")
-echo "$deployment_data"
+>&2 echo "$deployment_data"
 
 provisioning_state=$(echo "$deployment_data" | python -c "import json, sys; data=json.load(sys.stdin);print data['properties']['provisioningState']")
 if [ "$provisioning_state" != "Succeeded" ]; then
-    echo "Deployment failed." 1>&2
+    >&2 echo "Deployment failed."
     exit -1
 fi
 
 # Download kubernetes config if applicable
 if [[ "$template_name" == *"k8s"* ]]; then
-  echo "Copying Kubernetes credentials to the agent..."
-  az acs kubernetes get-credentials --resource-group=$scenario_name --name=containerservice-$scenario_name --ssh-key-file=$temp_key_path
-fi
-
-# Jenkins templates don't have the VmFQDN, we need to get it from the jenkinsURL output
-if [[ "$template_name" == *"jenkins"* ]]; then
-  fqdn=$(echo "$deployment_data" | python -c "import json, sys, re;data=json.load(sys.stdin);print re.findall(r'https*://(.*)' ,data['properties']['outputs']['jenkinsURL']['value'])[0]")
-else
-  fqdn=$(echo "$deployment_data" | python -c "import json, sys;data=json.load(sys.stdin);print data['properties']['outputs']['${vm_prefix}VmFQDN']['value']")
+  >&2 echo "Copying Kubernetes credentials to the agent..."
+  >&2 az acs kubernetes get-credentials --resource-group=$scenario_name --name=containerservice-$scenario_name --ssh-key-file=$temp_key_path
 fi
 
 # Setup an ssh key on the VMs if the template didn't do it by default
 # (it's more secure than programatically ssh-ing with a password and let's us ssh in a consistent manner)
 if [[ "$parameters" != *"sshPublicKey"* ]]; then
-  echo 'Setting up ssh key access for vm...'
-  az vm user reset-ssh -n "${vm_prefix}VM" -g "$scenario_name" # The azure-jenkins template fails to setup the key for some reason unless we do this first
-  az vm user update -u "$user_name" --ssh-key-value "$temp_pub_key" -n "${vm_prefix}VM" -g "$scenario_name"
+  >&2 echo 'Setting up ssh key access for vm...'
+  >&2 az vm user reset-ssh -n "${vm_prefix}VM" -g "$scenario_name" # The azure-jenkins template fails to setup the key for some reason unless we do this first
+  >&2 az vm user update -u "$user_name" --ssh-key-value "$temp_pub_key" -n "${vm_prefix}VM" -g "$scenario_name"
 fi
 
-# Setup ssh port forwarding
-temp_ctl=$scenario_name/tunnel.ctl
-cat <<EOF >"$scenario_name/ssh_config"
-Host tunnel-start
-  HostName $fqdn
-  IdentityFile $temp_key_path
-  ControlMaster yes
-  ControlPath $temp_ctl
-  RequestTTY no
-  # Spinnaker/gate
-  LocalForward 8084 127.0.0.1:8084
-  # Jenkins
-  LocalForward 8080 127.0.0.1:8080
-  User $user_name
-  StrictHostKeyChecking no
-
-Host tunnel-stop
-  HostName $fqdn
-  IdentityFile $temp_key_path
-  ControlPath $temp_ctl
-  RequestTTY no
-EOF
+ssh_command=$(echo "$deployment_data" | python -c "import json, sys;data=json.load(sys.stdin);print data['properties']['outputs']['ssh']['value']")
+echo "$ssh_command -i $temp_key_path -S $scenario_name/ssh-socket"
