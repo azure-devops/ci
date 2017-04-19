@@ -9,6 +9,7 @@ node('quickstart-template') {
         def run_spinnaker_k8s_test = env.JOB_BASE_NAME.contains("spinnaker") && env.JOB_BASE_NAME.contains("k8s")
 
         def scenario_name = "qstest" + UUID.randomUUID().toString().replaceAll("-", "")
+        def ssh_command = ""
 
         stage('Deploy Quickstart Template') {
             checkout scm
@@ -16,11 +17,11 @@ node('quickstart-template') {
             def script_path = 'scripts/deploy-quickstart-template.sh'
             sh 'sudo chmod +x ' + script_path
             withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
-                sh script_path + ' -tn ' + env.JOB_BASE_NAME + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key
+                ssh_command = sh(returnStdout: true, script: script_path + ' -tn ' + env.JOB_BASE_NAME + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key).trim()
             }
         }
 
-        sh 'ssh -F ' + scenario_name + '/ssh_config -f -N tunnel-start'
+        sh ssh_command + ' -fNTM -o "StrictHostKeyChecking=no"'
 
         if (run_basic_spinnaker_test) {
             stage('Basic Spinnaker Test') {
@@ -63,7 +64,7 @@ node('quickstart-template') {
             }
         }
 
-        sh 'ssh -O "exit" -F ' + scenario_name + '/ssh_config tunnel-stop'
+        sh ssh_command + ' -O exit'
 
         stage('Clean Up') {
             sh 'rm -rf ' + scenario_name
