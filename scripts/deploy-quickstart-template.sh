@@ -155,4 +155,4 @@ if [[ "$parameters" != *"sshPublicKey"* ]]; then
 fi
 
 ssh_command=$(echo "$deployment_data" | python -c "import json, sys;data=json.load(sys.stdin);print data['properties']['outputs']['ssh']['value']")
-echo "$ssh_command -i $temp_key_path -S $scenario_name/ssh-socket"
+echo "$ssh_command -i $temp_key_path"
