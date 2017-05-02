@@ -1,4 +1,6 @@
 node('quickstart-template') {
+    def scenario_name = "qstest" + UUID.randomUUID().toString().replaceAll("-", "")
+
     try {
         properties([
             pipelineTriggers([cron('@daily')]),
@@ -12,7 +14,6 @@ node('quickstart-template') {
         def run_jenkins_acr_test = env.JOB_BASE_NAME.contains("jenkins-acr")
         def run_spinnaker_k8s_test = env.JOB_BASE_NAME.contains("spinnaker") && env.JOB_BASE_NAME.contains("k8s")
 
-        def scenario_name = "qstest" + UUID.randomUUID().toString().replaceAll("-", "")
         def ssh_command = ""
         def jenkinsAdminPassword = "";
         def socket = scenario_name + "/ssh-socket"
@@ -111,9 +112,9 @@ node('quickstart-template') {
         }
 
         stage('Clean Up') {
-            sh 'rm -rf ' + scenario_name
-            sh 'az group delete -n ' + scenario_name + ' --yes'
-            sh 'az logout'
+          // Only clean up the resource group if all previous stages passed (just in case we want to debug a failure)
+          // The clean-deployments job will delete it after 2 days
+          sh 'az group delete -n ' + scenario_name + ' --yes'
         }
     } catch (e) {
         def public_build_url = "$BUILD_URL".replaceAll("10.0.0.4:8080" , "devops-ci.westcentralus.cloudapp.azure.com")
@@ -126,5 +127,9 @@ node('quickstart-template') {
             )
         }
         throw e
+    } finally {
+      sh 'az logout'
+      sh 'rm -f ~/.kube/config'
+      sh 'rm -rf ' + scenario_name
     }
 }
