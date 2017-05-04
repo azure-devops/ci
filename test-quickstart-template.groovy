@@ -12,6 +12,7 @@ node('quickstart-template') {
         // The azure-jenkins template uses an old image that doesn't support the same CLI command that we run
         def run_basic_jenkins_test = env.JOB_BASE_NAME != "azure-jenkins" && env.JOB_BASE_NAME.contains("jenkins")
         def run_jenkins_acr_test = env.JOB_BASE_NAME.contains("jenkins-acr")
+        def run_jenkins_aptly_test = env.JOB_BASE_NAME.contains("jenkins-aptly")
         def run_spinnaker_k8s_test = env.JOB_BASE_NAME.contains("spinnaker") && env.JOB_BASE_NAME.contains("k8s")
 
         def ssh_command = ""
@@ -58,6 +59,23 @@ node('quickstart-template') {
                   }
                   
                   def jobName = "basic-docker-build"
+                  if (!jobList || !jobList.contains(jobName)) {
+                      error("Failed to find '" + jobName + "' in Jenkins job list.")
+                  }
+              }
+          }
+
+          if (run_jenkins_aptly_test) {
+              stage('Jenkins to Aptly Test') {
+                  def jobList = null
+                  try {
+                      // NOTE: The password will be printed out in the logs, but that's fine since you still have to ssh onto the VM to use it
+                      jobList = sh(returnStdout: true, script: 'curl --silent "' + utils_location + 'jenkins/run-cli-command.sh" | sudo bash -s -- -c "list-jobs" -ju "admin" -jp ' + jenkinsAdminPassword).trim()
+                      echo "Jenkins job list: " + jobList
+                  } catch (e) {
+                  }
+                  
+                  def jobName = "hello-karyon-rxnetty"
                   if (!jobList || !jobList.contains(jobName)) {
                       error("Failed to find '" + jobName + "' in Jenkins job list.")
                   }
