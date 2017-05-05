@@ -4,7 +4,11 @@ node('quickstart-template') {
     try {
         properties([
             pipelineTriggers([cron('@daily')]),
-            buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '14', numToKeepStr: ''))
+            buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '14', numToKeepStr: '')),
+            parameters([
+             string(defaultValue: 'Azure', description: '', name: 'template_fork'),
+             string(defaultValue: 'master', description: '', name: 'template_branch')
+             ])
         ])
 
         def utils_location = "https://raw.githubusercontent.com/Azure/azure-devops-utils/v0.11.0/"
@@ -24,7 +28,7 @@ node('quickstart-template') {
             def script_path = 'scripts/deploy-quickstart-template.sh'
             sh 'sudo chmod +x ' + script_path
             withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
-                ssh_command = sh(returnStdout: true, script: script_path + ' -tn ' + env.JOB_BASE_NAME + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key).trim()
+                ssh_command = sh(returnStdout: true, script: script_path + ' -tl ' + 'https://raw.githubusercontent.com/' + params.template_fork + '/azure-quickstart-templates/' + params.template_branch + '/' +' -tn ' + env.JOB_BASE_NAME + ' -sn ' + scenario_name + ' -ai ' + env.app_id + ' -ak ' + env.app_key).trim()
             }
         }
 
@@ -40,7 +44,7 @@ node('quickstart-template') {
                       echo "Jenkins version: " + version
                   } catch (e) {
                   }
-                  
+
                   if (!version || version == "") {
                       error("Failed to get Jenkins version.")
                   }
@@ -56,7 +60,7 @@ node('quickstart-template') {
                       echo "Jenkins job list: " + jobList
                   } catch (e) {
                   }
-                  
+
                   def jobName = "basic-docker-build"
                   if (!jobList || !jobList.contains(jobName)) {
                       error("Failed to find '" + jobName + "' in Jenkins job list.")
@@ -74,7 +78,7 @@ node('quickstart-template') {
                       spinnakerGateHealth = slurper.parseText(response)
                   } catch (e) {
                   }
-                  
+
                   if (spinnakerGateHealth.status != "UP") {
                       error("Spinnaker Gate service is not healthy.")
                   }

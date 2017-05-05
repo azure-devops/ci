@@ -13,6 +13,7 @@ Arguments
   --user_name|-un                   : User name
   --region|-r                       : Region
   --keep_alive_hours|-kah           : The max number of hours to keep this deployment, defaulted to 48
+  --template_location|-tl           : The Quickstart template location
 EOF
 }
 
@@ -87,6 +88,10 @@ do
       print_usage
       exit 13
       ;;
+    --template_location|-tl)
+      template_location="$1"
+      shift
+      ;;
     *)
       >&2 echo "ERROR: Unknown argument '$key' to script '$0'"
       exit -1
@@ -101,6 +106,7 @@ throw_if_empty --tenant_id $tenant_id
 throw_if_empty --user_name $user_name
 throw_if_empty --region $region
 throw_if_empty --keep_alive_hours $keep_alive_hours
+throw_if_empty --template_location $template_location
 
 # Create ssh key
 mkdir $scenario_name
