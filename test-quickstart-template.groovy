@@ -35,54 +35,9 @@ node('quickstart-template') {
 
         sh ssh_command + ' -S ' + socket + ' -fNTM -o "StrictHostKeyChecking=no"'
         try {
-          if (run_basic_jenkins_test) {
-              stage('Basic Jenkins Test') {
-                  jenkinsAdminPassword = sh(returnStdout: true, script: ssh_command + " sudo cat /var/lib/jenkins/secrets/initialAdminPassword").trim()
-                  def version = null
-                  try {
-                      // NOTE: The password will be printed out in the logs, but that's fine since you still have to ssh onto the VM to use it
-                      version = sh(returnStdout: true, script: 'curl --silent "' + utils_location + 'jenkins/run-cli-command.sh" | sudo bash -s -- -c "version" -ju "admin" -jp ' + jenkinsAdminPassword).trim()
-                      echo "Jenkins version: " + version
-                  } catch (e) {
-                  }
-
-                  if (!version || version == "") {
-                      error("Failed to get Jenkins version.")
-                  }
-              }
-          }
-
-          if (run_jenkins_acr_test) {
-              stage('Jenkins to ACR Test') {
-                  def jobList = null
-                  try {
-                      // NOTE: The password will be printed out in the logs, but that's fine since you still have to ssh onto the VM to use it
-                      jobList = sh(returnStdout: true, script: 'curl --silent "' + utils_location + 'jenkins/run-cli-command.sh" | sudo bash -s -- -c "list-jobs" -ju "admin" -jp ' + jenkinsAdminPassword).trim()
-                      echo "Jenkins job list: " + jobList
-                  } catch (e) {
-                  }
-
-                  def jobName = "basic-docker-build"
-                  if (!jobList || !jobList.contains(jobName)) {
-                      error("Failed to find '" + jobName + "' in Jenkins job list.")
-                  }
-              }
-          }
-
-          if (run_jenkins_aptly_test) {
-              stage('Jenkins to Aptly Test') {
-                  def jobList = null
-                  try {
-                      // NOTE: The password will be printed out in the logs, but that's fine since you still have to ssh onto the VM to use it
-                      jobList = sh(returnStdout: true, script: 'curl --silent "' + utils_location + 'jenkins/run-cli-command.sh" | sudo bash -s -- -c "list-jobs" -ju "admin" -jp ' + jenkinsAdminPassword).trim()
-                      echo "Jenkins job list: " + jobList
-                  } catch (e) {
-                  }
-                  
-                  def jobName = "hello-karyon-rxnetty"
-                  if (!jobList || !jobList.contains(jobName)) {
-                      error("Failed to find '" + jobName + "' in Jenkins job list.")
-                  }
+          if (run_basic_jenkins_test || run_jenkins_acr_test || run_jenkins_aptly_test) {
+              stage('Jenkins Test') {
+                runJenkinsTests(sshCommand: ssh_command, utilsLocation: utils_location, runJenkinsACRTest: run_jenkins_acr_test, runJenkinsAptlyTest: run_jenkins_aptly_test)
               }
           }
 
