@@ -151,7 +151,7 @@ if [[ "$template_name" == *"k8s"* ]]; then
   >&2 echo "Copying Kubernetes credentials to the agent..."
   >&2 az acs kubernetes get-credentials --resource-group=$scenario_name --name=containerservice-$scenario_name --ssh-key-file=$temp_key_path
 
-  if [ ! -s "~/.kube/config" ]; then
+  if [ ! -s ~/.kube/config ]; then
     >&2 echo "Failed to copy kubeconfig for kubernetes cluster."
     exit -1
   fi
