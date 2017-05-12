@@ -18,19 +18,17 @@ def call(Map options = [:]) {
     def remoteURL = options.sshCommand.split('@')[1].split(' ')[0]
     print remoteURL;
 
-    def compare_script_path = 'scripts/compare-web-pages.sh'
-    sh 'sudo chmod +x ' + compare_script_path
-
     //we're using the login page, because http://localhost doest javascript redirect to login
-    diff_result = sh(returnStatus: true, script: compare_script_path + " -f http://localhost:8080/login -s http://" + remoteURL + "/login")
-    if (diff_result != 1) {
-        error("The public landing page is identical with the local page!")
+    remote_page = sh(returnStdout: true, script: "curl -s -L http://" + remoteURL + "/login")
+    if (remote_page.contains("<title>Jenkins</title>")) {
+        error("The login page is accessible over the public IP address, possibly exposing the user to Man in the Middle Attacks!")
+    } else if (!remote_page.contains("<title>Jenkins On Azure</title>")) {
+        error("The Azure landing page was not displayed over the public IP address!")
     }
 
-
-    diff_result = sh(returnStatus: true, script: compare_script_path + " -f " + options.utilsLocation + "jenkins/jenkins-on-azure/index.html -s http://" + remoteURL + "/login -d "+ remoteURL)
-    if (diff_result != 0) {
-        error("The public landing page is not the same as the one in GitHub! Maybe you need to update the version (" + options.utilsLocation + "jenkins/jenkins-on-azure/index.html)")
+    return_code = sh(returnStatus: true, script: " curl --connect-timeout 10 http://" + remoteURL + ":8080")
+    if (return_code != 28) {
+        error("Port 8080 is accessible over the public IP address, possibly exposing the user to Man in the Middle Attacks!")
     }
 
     if ( sh(returnStatus: true, script: 'command -v az >/dev/null') ) {
@@ -40,7 +38,7 @@ def call(Map options = [:]) {
         error("Git is not installed on the machine!")
     }
 
-    if (options.runJenkinsACRTest) {
+    for (jobName in options.expectedJobNames) {
         def jobList = null
         try {
             // NOTE: The password will be printed out in the logs, but that's fine since you still have to ssh onto the VM to use it
@@ -49,22 +47,6 @@ def call(Map options = [:]) {
         } catch (e) {
         }
 
-        def jobName = "basic-docker-build"
-        if (!jobList || !jobList.contains(jobName)) {
-            error("Failed to find '" + jobName + "' in Jenkins job list.")
-        }
-    }
-
-    if (options.runJenkinsAptlyTest) {
-        def jobList = null
-        try {
-            // NOTE: The password will be printed out in the logs, but that's fine since you still have to ssh onto the VM to use it
-            jobList = sh(returnStdout: true, script: 'curl --silent "' + options.utilsLocation + 'jenkins/run-cli-command.sh" | sudo bash -s -- -c "list-jobs" -ju "admin" -jp ' + jenkinsAdminPassword).trim()
-            echo "Jenkins job list: " + jobList
-        } catch (e) {
-        }
-
-        def jobName = "hello-karyon-rxnetty"
         if (!jobList || !jobList.contains(jobName)) {
             error("Failed to find '" + jobName + "' in Jenkins job list.")
         }

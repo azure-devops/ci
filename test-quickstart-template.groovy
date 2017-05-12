@@ -37,7 +37,12 @@ node('quickstart-template') {
         try {
           if (run_basic_jenkins_test || run_jenkins_acr_test || run_jenkins_aptly_test) {
               stage('Jenkins Test') {
-                runJenkinsTests(sshCommand: ssh_command, utilsLocation: utils_location, runJenkinsACRTest: run_jenkins_acr_test, runJenkinsAptlyTest: run_jenkins_aptly_test)
+                  def expectedJobs = [];
+                  if (run_jenkins_acr_test)
+                    expectedJobs.push("basic-docker-build")
+                  if (run_jenkins_aptly_test)
+                    expectedJobs.push("hello-karyon-rxnetty")
+                runJenkinsTests(sshCommand: ssh_command, utilsLocation: utils_location, expectedJobNames: expectedJobs)
               }
           }
 
