@@ -25,5 +25,7 @@ node('quickstart-template') {
             )
         }
         throw e
+    } finally {
+      sh 'az logout'
     }
 }

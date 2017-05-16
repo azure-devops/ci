@@ -1,0 +1,86 @@
+#!/usr/bin/expect
+
+set fork [lindex $argv 0];
+set branch [lindex $argv 1];
+
+set timeout 20
+spawn "./deploy-interactive.sh" -f "$fork" -b "$branch"
+
+expect {
+  "Do you want Spinnaker to target" { send "vmss\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter a username" { send "a\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter a dns prefix" { send "aaa\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter the number corresponding to the location" { send "0\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "existing service principal" { send "y\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter the app id" { send "appid1\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter the app key" { send "appkey1\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Confirm the app key" { send "appkey1\n" }
+  timeout { exit -1 }
+}
+
+###### Invalid ######
+# Empty
+expect {
+  "Enter a password" { send "\n" }
+  timeout { exit -1 }
+}
+# Too short
+expect {
+  "Enter a password" { send "aaaaaaaaaaa\n" }
+  timeout { exit -1 }
+}
+# Mismatch
+expect {
+  "Enter a password" { send "aaaaaaaaaaaa\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Confirm your password" { send "thispassworddoesnotmatch\n" }
+  timeout { exit -1 }
+}
+###### Valid ######
+expect {
+  "Enter a password" { send "aaaaaaaaaaaa\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Confirm your password" { send "aaaaaaaaaaaa\n" }
+  timeout { exit -1 }
+}
+
+# If validation failed, there will be a json element with an error "code"
+expect {
+  "\"code\": " { exit -1 }
+  "The deployment has begun" {}
+  timeout { exit -1 }
+}
+
+interact
+

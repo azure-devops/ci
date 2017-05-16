@@ -1,0 +1,77 @@
+#!/usr/bin/expect
+
+set fork [lindex $argv 0];
+set branch [lindex $argv 1];
+
+set timeout 20
+
+spawn "./deploy-interactive.sh" -f "$fork" -b "$branch"
+
+expect {
+  "Do you want Spinnaker to target" { send "k8s\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter a username" { send "a\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter a dns prefix" { send "aaa\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter the number corresponding to the location" { send "0\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "existing service principal" { send "y\n" }
+  timeout { exit -1 }
+}
+
+###### Invalid ######
+expect {
+  "Enter the app id" { send "\n" }
+  timeout { exit -1 }
+}
+###### Valid ######
+expect {
+  "Enter the app id" { send "appid1\n" }
+  timeout { exit -1 }
+}
+
+###### Invalid ######
+# Empty
+expect {
+  "Enter the app key" { send "\n" }
+  timeout { exit -1 }
+}
+# Mismatch
+expect {
+  "Enter the app key" { send "bogus\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Confirm the app key" { send "bogusnotmatch\n" }
+  timeout { exit -1 }
+}
+
+###### Valid ######
+expect {
+  "Enter the app key" { send "appkey1\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Confirm the app key" { send "appkey1\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "existing ssh key" { send \003\n }
+  timeout { exit -1 }
+}
+
+interact

@@ -1,0 +1,58 @@
+#!/usr/bin/expect
+
+set fork [lindex $argv 0];
+set branch [lindex $argv 1];
+
+set timeout 20
+spawn "./deploy-interactive.sh" -f "$fork" -b "$branch"
+
+expect {
+  "Do you want Spinnaker to target" { send "k8s\n" }
+  timeout { exit -1 }
+}
+
+###### Invalid ######
+# Too short
+expect {
+  "Enter a username" { send "\n" }
+  timeout { exit -1 }
+}
+# Too long
+expect {
+  "Enter a username" { send "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n" }
+  timeout { exit -1 }
+}
+# Must start with a letter
+expect {
+  "Enter a username" { send "9aa\n" }
+  timeout { exit -1 }
+}
+# No uppercase letters
+expect {
+  "Enter a username" { send "aaA\n" }
+  timeout { exit -1 }
+}
+# No symbols
+expect {
+  "Enter a username" { send "aa?\n" }
+  timeout { exit -1 }
+}
+# No reserved words
+expect {
+  "Enter a username" { send "admin\n" }
+  timeout { exit -1 }
+}
+
+###### Valid ######
+# Can contain hyphens, can contain underscores, can end in a hyphen
+expect {
+  "Enter a username" { send "a_9-\n" }
+  timeout { exit -1 }
+}
+
+expect {
+  "Enter a dns prefix" { send \003\n }
+  timeout { exit -1 }
+}
+
+interact
