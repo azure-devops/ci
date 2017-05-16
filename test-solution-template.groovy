@@ -19,6 +19,8 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
     def params = [:]
     params['_artifactsLocation'] = ['value' : template_base_url]
     params['_artifactsLocationSasToken'] = ['value' : '']
+    params['publicIPResourceGroup'] = ['value' : scenario_name]
+    params['storageAccountResourceGroup'] = ['value' : scenario_name]
     params['vmName'] = ['value' : UUID.randomUUID().toString().replaceAll('-', '')]
     params['adminUserName'] = ['value' : 'testuser']
     params['adminPassword'] = ['value' : '']
