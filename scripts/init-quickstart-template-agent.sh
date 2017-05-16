@@ -8,6 +8,9 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get update -y --fix-missing
 # Install git
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
 
+# Install expect
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y expect
+
 if !(command -v git >/dev/null); then
   echo "Failed to install git on agent" 1>&2
   exit -1
