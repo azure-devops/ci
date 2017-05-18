@@ -1,0 +1,51 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ Valid SSH Key Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey
+expect {
+  "Enter an ssh public key" { send "test-key.pub\n" }
+  timeout { puts "\nFailed: Can pass parameters before ssh key"; exit -1 }
+}
+expect {
+  "Starting deployment..." { send \003 }
+  timeout { puts "\nFailed: Ssh key can pass file path"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey
+expect {
+  "Enter an ssh public key" { send "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFsNe6OrLBEO2MWaM8VYFXwZX2XANCnUFGLgr6YgooavKQdQB2mqD2ELSR2CTAbgaODmxVTdxzOiPNGylkIcfVJiIV2Vysib2sKXdfQLLtDRjZQjFLPYpyYXyJIwoPmPuZUFvNUtZGty1mpH7uwqHqxoDqmPwKtkjLbLoM4VN9CVNXblI5Vkga+yof9Qtd/oE+pFN+pdm66sX/1phid/norsGJ7/2OpV/rEXnW/QmGtXlq6Ic22Z9/2oTolI4o53ZuxBuLJc0dNyu3hESbJIXQEXcW7IZ1IuCs6WO79sr46Fhdric8IfTRJ/ReiZNRLHEAoTPx0nvCay5F2DjPVf5p testuser@Fabrikam.com\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Starting deployment..." { send \003 }
+  timeout { puts "\nFailed: Ssh key can pass public key value"; exit -1 }
+}
+
+puts "\n------ Invalid SSH Key Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey
+expect {
+  "Enter an ssh public key" { send "bogus\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter an ssh public key" { send "bad-key.pub\n" }
+  timeout { puts "\nFailed: Ssh key cannot be bad value"; exit -1 }
+}
+expect {
+  "Enter an ssh public key" { send \003 }
+  timeout { puts "\nFailed: Ssh key cannot be file with bad value"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey -spk bad-key.pub -q
+expect {
+  "Error: The public key" {}
+  timeout { puts "\nFailed: Script did not throw error for bad ssh key"; exit -1 }
+}
+expect {
+  timeout { puts "\nFailed: Script did not immediately exit with bad parameter in quiet mode"; exit -1 }
+  eof
+}

@@ -1,0 +1,82 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ Valid DNS Prefix Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a
+expect {
+  "Enter a DNS prefix" { send "aaa-a\n" }
+  timeout { puts "\nFailed: Can pass parameters before dns prefix"; exit -1 }
+}
+expect {
+  "Enter an integer between" { send \003 }
+  timeout { puts "\nFailed: DNS prefix can contain hyphens"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a
+expect {
+  "Enter a DNS prefix" { send "aaa\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter an integer between" { send \003 }
+  timeout { puts "\nFailed: DNS prefix can be three characters"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a
+expect {
+  "Enter a DNS prefix" { send "aaaa9\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter an integer between" { send \003 }
+  timeout { puts "\nFailed: DNS prefix can end in a number"; exit -1 }
+}
+
+puts "\n------ Invalid DNS Prefix Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a
+expect {
+  "Enter a DNS prefix" { send "aa\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n" }
+  timeout { puts "\nFailed: Dns prefix cannot be too short"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send "9aa\n" }
+  timeout { puts "\nFailed: Dns prefix cannot be too long"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send "aaA\n" }
+  timeout { puts "\nFailed: Dns prefix cannot start with a number"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send "aa?\n" }
+  timeout { puts "\nFailed: Dns prefix cannot have uppercase letters"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send "aa_\n" }
+  timeout { puts "\nFailed: Dns prefix cannot have a symbol other than hyphen"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send "aa-\n" }
+  timeout { puts "\nFailed: Dns prefix cannot have a symbol other than hyphen"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send \003 }
+  timeout { puts "\nFailed: Dns prefix cannot end in a hyphen"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp BAD
+expect {
+  "Error: The dns prefix" {}
+  timeout { puts "\nFailed: Script did not throw error for bad DNS prefix"; exit -1 }
+}
+expect {
+  timeout { puts "\nFailed: Script did not immediately exit with bad parameter in quiet mode"; exit -1 }
+  eof
+}

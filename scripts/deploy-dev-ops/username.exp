@@ -1,0 +1,74 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ Valid Username Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s
+expect {
+  "Enter a username" { send "q\n" }
+  timeout { puts "\nFailed: Can pass parameters before username"; exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send \003 }
+  timeout { puts "\nFailed: Username can be one character"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s
+expect {
+  "Enter a username" { send "\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send \003 }
+  timeout { puts "\nFailed: Username can be blank (azureuser will be used)"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s
+expect {
+  "Enter a username" { send "a_9-\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a DNS prefix" { send \003 }
+  timeout { puts "\nFailed: Username can can have hyphens, numbers, and underscores"; exit -1 }
+}
+
+puts "\n------ Invalid Username Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s
+expect {
+  "Enter a username" { send "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a username" { send "9aa\n" }
+  timeout { puts "\nFailed: Username cannot be too long"; exit -1 }
+}
+expect {
+  "Enter a username" { send "aaA\n" }
+  timeout { puts "\nFailed: Username must start with a letter"; exit -1 }
+}
+expect {
+  "Enter a username" { send "aa?\n" }
+  timeout { puts "\nFailed: Username cannot have uppercase letters"; exit -1 }
+}
+expect {
+  "Enter a username" { send "admin\n" }
+  timeout { puts "\nFailed: Username cannot have symbol"; exit -1 }
+}
+expect {
+  "Enter a username" { send \003 }
+  timeout { puts "\nFailed: Username cannot used a reserved linux word"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u admin -q
+expect {
+  "Error: The username" {}
+  timeout { puts "\nFailed: Script did not throw error for bad username"; exit -1 }
+}
+expect {
+  timeout { puts "\nFailed: Script did not immediately exit with bad parameter in quiet mode"; exit -1 }
+  eof
+}

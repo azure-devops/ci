@@ -1,0 +1,22 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ K8s Tests ------"
+spawn ./deploy-dev-ops.sh -l westus -spk test-key.pub -q
+expect {
+  "Starting deployment..." { send \003 }
+  timeout { puts "\nFailed: Script failed to set defaults in quiet mode"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey -spk test-key.pub
+expect {
+  "Starting deployment..." {}
+  timeout { puts "\nFailed: Can pass parameters for everything k8s"; exit -1 }
+}
+
+expect {
+  "\"code\": " { puts "\nFailed: Error while validating deployment for k8s"; exit -1 }
+  eof
+}

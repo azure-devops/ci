@@ -1,0 +1,47 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ Valid Location Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa
+expect {
+  "Enter an integer between" { send "0\n" }
+  timeout { puts "\nFailed: Can pass parameters before location"; exit -1 }
+}
+expect {
+  "existing service principal" { send \003 }
+  timeout { puts "\nFailed: Location number can be 0"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa
+expect {
+  "Enter an integer between" { send "\n" }
+  timeout { exit -1 }
+}
+expect {
+  "existing service principal" { send \003 }
+  timeout { puts "\nFailed: Location number can be empty (defaults to first location)"; exit -1 }
+}
+
+puts "\n------ Invalid Location Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa
+expect {
+  "Enter an integer between" { send "99999\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter an integer between" { send \003 }
+  timeout { puts "\nFailed: Location number cannot be too big"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l invalid -q
+expect {
+  "The provided location" {}
+  timeout { puts "\nFailed: Script did not throw error for bad location"; exit -1 }
+}
+expect {
+  timeout { puts "\nFailed: Script did not immediately exit with bad parameter in quiet mode"; exit -1 }
+  eof
+}
