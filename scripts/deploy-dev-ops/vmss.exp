@@ -1,0 +1,16 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ VMSS Tests ------"
+spawn ./deploy-dev-ops.sh -dt vmss -u a -dp aaa -l westus -ai appid -ak appkey -p aaaaaaaaaaaa
+
+expect {
+  "Starting deployment..." {}
+  timeout { puts "\nFailed: Can pass parameters for everything vmss"; exit -1 }
+}
+
+expect {
+  "\"code\": " { puts "\nFailed: Error while validating deployment for vmss"; exit -1 }
+  eof
+}

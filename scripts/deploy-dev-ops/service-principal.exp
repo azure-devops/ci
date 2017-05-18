@@ -1,0 +1,69 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ Valid Service Principal Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus
+expect {
+  "existing service principal" { send "y\n" }
+  timeout { puts "\nFailed: Can pass parameters before service principal"; exit -1 }
+}
+expect {
+  "Enter the app id" { send "appid1\n" }
+  timeout { puts "\nFailed: Can use existing Service Principal"; exit -1 }
+}
+expect {
+  "Enter the app key" { send "appkey1\n" }
+  timeout { puts "\nFailed: App Id is valid"; exit -1 }
+}
+expect {
+  "Confirm the app key" { send "appkey1\n" }
+  timeout { puts "\nFailed: App Key is valid"; exit -1 }
+}
+expect {
+  "Enter an ssh public key" { send \003 }
+  timeout { puts "\nFailed: Confirming App Key matched"; exit -1 }
+}
+
+puts "\n------ Invalid Service Principal Tests ------"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus
+expect {
+  "existing service principal" { send "y\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter the app id" { send "\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter the app id" { send "appid1\n" }
+  timeout { puts "\nFailed: App id cannot be empty"; exit -1 }
+}
+expect {
+  "Enter the app key" { send "\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter the app key" { send "bogus\n" }
+  timeout { puts "\nFailed: App key cannot be empty"; exit -1 }
+}
+expect {
+  "Confirm the app key" { send "bogusnotmatch\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter the app key" { send \003 }
+  timeout { puts "\nFailed: Confirming app key must match"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -q
+# In this case it should fail becuase we pass 'quiet' and a service principal can't generate another service principal
+expect {
+  "Insufficient privileges" {}
+  timeout { puts "\nFailed: Script did not throw error when it can't generate a service principal"; exit -1 }
+}
+expect {
+  timeout { puts "\nFailed: Script did not immediately exit with bad parameter in quiet mode"; exit -1 }
+  eof
+}

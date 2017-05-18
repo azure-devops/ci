@@ -46,7 +46,7 @@ done
 throw_if_empty fork $fork
 throw_if_empty branch $branch
 
-script=$(curl -sL https://aka.ms/DeploySpinnaker)
+script=$(curl -sL https://aka.ms/DeployDevOps)
 
 old="Azure/azure-quickstart-templates/master"
 new="$fork/azure-quickstart-templates/$branch"
@@ -57,9 +57,8 @@ old='az group deployment create --name "$scenario_name"'
 new='az group deployment validate'
 script=${script//$old/$new}
 
-# The no-wait param doesn't exist when validating, but we do want to query for the error
-old="--no-wait"
-new="--query error"
+old='--query "{outputs: properties.outputs}"'
+new='--query error'
 script=${script//$old/$new}
 
 # Add a tag so that resource groups get deleted as soon as the next 'Clean Deployments' job runs
@@ -67,4 +66,6 @@ old='az group create'
 new='az group create --tags "CleanTime=$(date +%s)"'
 script=${script//$old/$new}
 
-bash <(echo "$script")
+script_name="deploy-dev-ops.sh"
+echo "$script" > "$script_name"
+chmod +x "$script_name"

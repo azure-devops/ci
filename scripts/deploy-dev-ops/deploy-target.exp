@@ -1,0 +1,69 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+puts "\n------ Valid Deploy Target Tests ------"
+spawn ./deploy-dev-ops.sh
+expect {
+  "Enter either" { send "k8s\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a username" { send \003 }
+  timeout { puts "\nFailed: Deploy target can be k8s"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh
+expect {
+  "Enter either" { send "vmss\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a username" { send \003 }
+  timeout { puts "\nFailed: Deploy target can be vmss"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh
+expect {
+  "Enter either" { send "k8S\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a username" { send \003 }
+  timeout { puts "\nFailed: Deploy target can be k8s with uppercase letters"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh
+expect {
+  "Enter either" { send "\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter a username" { send \003 }
+  timeout { puts "\nFailed: Deploy target can be empty (defaults to k8s)"; exit -1 }
+}
+
+puts "\n------ Invalid Deploy Target Tests ------"
+spawn ./deploy-dev-ops.sh
+expect {
+  "Enter either" { send "bogus\n" }
+  timeout { exit -1 }
+}
+expect {
+  "Enter either" { send \003 }
+  timeout { puts "\nFailed: Deploy target can only be k8s or vmss"; exit -1 }
+}
+
+puts "\n"
+spawn ./deploy-dev-ops.sh -dt bogus -q
+expect {
+  "Error: The deploy target" {}
+  timeout { puts "\nFailed: Script did not throw error for bad deploy target"; exit -1 }
+}
+expect {
+  timeout { puts "\nFailed: Script did not immediately exit with bad parameter in quiet mode"; exit -1 }
+  eof
+}
