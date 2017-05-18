@@ -72,5 +72,3 @@ do
     echo "Deleting resource group '$name'."
     az group delete -n $name --yes
 done
- 
-az logout
