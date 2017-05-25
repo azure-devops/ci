@@ -18,6 +18,7 @@ node('quickstart-template') {
         def run_jenkins_acr_test = env.JOB_BASE_NAME.contains("jenkins-acr")
         def run_jenkins_aptly_test = env.JOB_BASE_NAME.contains("jenkins-aptly")
         def run_spinnaker_k8s_test = env.JOB_BASE_NAME.contains("spinnaker") && env.JOB_BASE_NAME.contains("k8s")
+        def run_spinnaker_vmss_test = env.JOB_BASE_NAME.contains("spinnaker") && env.JOB_BASE_NAME.contains("vmss")
 
         def ssh_command = ""
         def jenkinsAdminPassword = "";
@@ -64,29 +65,11 @@ node('quickstart-template') {
           }
 
           if (run_spinnaker_k8s_test) {
-              stage('Spinnaker Deploy to Kubernetes Test') {
-                  def venv_name= env.JOB_BASE_NAME + '-venv'
-                  def activate_venv = '. "' + env.WORKSPACE + '/' + venv_name + '/bin/activate";'
-                  sh 'virtualenv ' + venv_name
+            runSpinnakerCITest(testName: 'kube_smoke_test', testArgs: '--spinnaker_kubernetes_account=my-kubernetes-account')
+          }
 
-                  dir('citestpackage') {
-                      // Eventually this repo will be its own python package and we won't have to install it separately
-                      git 'https://github.com/google/citest.git'
-                      sh activate_venv + 'pip install -r requirements.txt'
-                  }
-
-                  dir('spinnaker-k8s-test') {
-                      git 'https://github.com/spinnaker/spinnaker.git'
-
-                      dir('testing/citest') {
-                          try {
-                            sh activate_venv + 'pip install -r requirements.txt;PYTHONPATH=.:spinnaker python tests/kube_smoke_test.py --native_host=localhost --spinnaker_kubernetes_account=my-kubernetes-account'
-                          } finally {
-                            archiveArtifacts 'kube_smoke_test.*'
-                          }
-                      }
-                  }
-              }
+          if (run_spinnaker_vmss_test) {
+            runSpinnakerCITest(testName: 'azure_smoke_test', testArgs: '--spinnaker_azure_account=my-azure-account')
           }
         } finally {
           // Always close the socket so that the port is not in use on the agent
