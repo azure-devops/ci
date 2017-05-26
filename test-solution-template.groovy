@@ -30,6 +30,7 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
     params['storageAccountType'] = ['value' : options.storageType]
     params['publicIPName'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '')]
     params['dnsPrefix'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '')]
+    params['jenkinsReleaseType'] = ['value' : options.jenkinsReleaseType]
 
     if (options.useSSHPublicKey) {
         params['authenticationType'] = ['value' : 'sshPublicKey']
@@ -106,6 +107,11 @@ def RunSolutionTemplateTests(options) {
 }
 
 try {
+    def jenkins_release_type = 'LTS'
+    if ( env.JOB_BASE_NAME.contains('weekly') ) {
+        jenkins_release_type = 'weekly'
+    }
+
     stage('Run Solution Template Tests') {
         Map tasks = [failFast: false]
         def options = []
@@ -122,7 +128,8 @@ try {
                                     useExistingStorage: existingStorage,
                                     storageType: storageTypeStr,
                                     useExistingPublicIP: existingPublicIP,
-                                    utilsLocation: utils_location
+                                    utilsLocation: utils_location,
+                                    jenkinsReleaseType: jenkins_release_type
                                 ])
                             }
                         }
