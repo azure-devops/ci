@@ -9,7 +9,7 @@ expect {
   timeout { puts "\nFailed: Can pass parameters before ssh key"; exit -1 }
 }
 expect {
-  "Starting deployment..." { send \003 }
+  "Enter a git repository" { send \003 }
   timeout { puts "\nFailed: Ssh key can pass file path"; exit -1 }
 }
 
@@ -20,7 +20,7 @@ expect {
   timeout { exit -1 }
 }
 expect {
-  "Starting deployment..." { send \003 }
+  "Enter a git repository" { send \003 }
   timeout { puts "\nFailed: Ssh key can pass public key value"; exit -1 }
 }
 
