@@ -10,7 +10,7 @@ expect {
 }
 
 puts "\n"
-spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey -spk test-key.pub
+spawn ./deploy-dev-ops.sh -dt k8s -u a -dp aaa -l westus -ai appid -ak appkey -spk test-key.pub -gr "https://github.com/azure-devops/spin-kub-demo"
 expect {
   "Starting deployment..." {}
   timeout { puts "\nFailed: Can pass parameters for everything k8s"; exit -1 }
