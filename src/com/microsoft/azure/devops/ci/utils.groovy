@@ -94,6 +94,7 @@ def loadJobProperties() {
                         node_name - the node name
                         environment - the credentials id for the groovy script that sets up the environment
 */
+@NonCPS
 def runIntegrationTests(envList) {
     Map tasks = [failFast: false]
     for (int i = 0; i < envList.size(); ++i) {
