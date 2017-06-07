@@ -103,6 +103,6 @@ function retry_until_successful {
 
 retry_until_successful wget ${jenkins_url}/jnlpJars/jenkins-cli.jar -O jenkins-cli.jar
 
-echo "${job_xml}" | java -jar jenkins-cli.jar -s "${jenkins_url}" -i "${REMOTE_JENKINS_PEM}" create-job "${job_name}"
+echo "${job_xml}" | java -jar jenkins-cli.jar -remoting -s "${jenkins_url}" -i "${REMOTE_JENKINS_PEM}" create-job "${job_name}"
 
 rm jenkins-cli.jar

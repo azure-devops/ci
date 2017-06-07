@@ -86,6 +86,6 @@ function retry_until_successful {
 
 retry_until_successful wget ${jenkins_url}/jnlpJars/jenkins-cli.jar -O jenkins-cli.jar
 
-echo "${credentials_xml}" | java -jar jenkins-cli.jar -s "${jenkins_url}" -i "${REMOTE_JENKINS_PEM}" create-credentials-by-xml SystemCredentialsProvider::SystemContextResolver::jenkins "(global)"
+echo "${credentials_xml}" | java -jar jenkins-cli.jar -remoting -s "${jenkins_url}" -i "${REMOTE_JENKINS_PEM}" create-credentials-by-xml SystemCredentialsProvider::SystemContextResolver::jenkins "(global)"
 
 rm jenkins-cli.jar
