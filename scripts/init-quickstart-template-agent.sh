@@ -2,7 +2,7 @@ set -x
 
 # Install Java
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-7-jdk
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y default-jdk
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y --fix-missing
 
 # Install git
