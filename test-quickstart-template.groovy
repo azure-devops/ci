@@ -35,6 +35,11 @@ node('quickstart-template') {
         }
 
         sh ssh_command + ' -S ' + socket + ' -fNTM -o "StrictHostKeyChecking=no"'
+
+        if (run_spinnaker_k8s_test) {
+          sh ssh_command + ' "nohup hal deploy connect --service-names gate &>/dev/null &"'
+        }
+
         try {
           if (run_basic_jenkins_test || run_jenkins_acr_test || run_jenkins_aptly_test) {
               stage('Jenkins Test') {
