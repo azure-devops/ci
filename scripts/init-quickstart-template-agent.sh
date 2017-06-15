@@ -26,7 +26,8 @@ echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/azure-cli/ wheezy
 sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y azure-cli
+# NOTE: Using version 2.0.7 of the Azure CLI until this bug is fixed: https://github.com/Azure/azure-cli/issues/3731
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y azure-cli=0.2.10-1
 
 if !(command -v az >/dev/null); then
   echo "Failed to install az cli on agent" 1>&2
