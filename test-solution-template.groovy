@@ -45,7 +45,7 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
         params['storageAccountNewOrExisting'] = ['value' : 'existing']
         def deploy_storage_script_path = 'scripts/deploy-storage-account.sh'
         sh 'sudo chmod +x ' + deploy_storage_script_path
-        withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestingSP', passwordVariable: 'app_key', usernameVariable: 'app_id')]) {
+        withCredentials([azureServicePrincipal(clientIdVariable: 'app_id', clientSecretVariable: 'app_key', credentialsId: 'DevOpsTesting')]) {
             sh deploy_storage_script_path + ' -an ' + params['storageAccountName']['value'] + ' -rg ' + scenario_name + ' -sk ' + params['storageAccountType']['value'] + ' -ai ' + env.app_id + ' -ak ' + env.app_key
         }
     } else {
