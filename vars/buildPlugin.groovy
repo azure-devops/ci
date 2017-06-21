@@ -65,7 +65,7 @@ def call() {
             }
             stage('Upload Bits') {
                 unstash 'artifacts'
-                azureUpload blobProperties: [cacheControl: '', contentEncoding: '', contentLanguage: '', contentType: '', detectContentType: false], cntPubAccess: true, containerName: 'devops-jenkins', filesPath: '*.hpi', storageCredentialId: 'devops-public-storage', virtualPath: env.JOB_NAME +'/' +env.BUILD_NUMBER
+                azureUpload blobProperties: [cacheControl: '', contentEncoding: '', contentLanguage: '', contentType: '', detectContentType: false], pubAccessible: true, storageType: 'blobstorage', containerName: 'devops-jenkins', filesPath: '*.hpi', storageCredentialId: 'devops-public-storage', virtualPath: env.JOB_NAME +'/' +env.BUILD_NUMBER
             }
         }
 
