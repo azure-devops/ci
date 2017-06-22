@@ -1,8 +1,9 @@
 set -x
 
-#Install Java
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y default-jdk
+#Install Java 8
+sudo DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:openjdk-r/ppa -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y update --fix-missing
 
 # Install git
