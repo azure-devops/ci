@@ -13,7 +13,7 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
     checkout scm
 
     def template_base_url = "https://raw.githubusercontent.com/" + params.template_fork + "/azure-devops-utils/"+ params.template_branch + "/"
-    def template_url = template_base_url + "/solution_template/jenkins/MainTemplate.json"
+    def template_url = template_base_url + "/solution_template/jenkins/mainTemplate.json"
     def ssh_command = ""
 
     def params = [:]
