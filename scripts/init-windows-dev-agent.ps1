@@ -12,7 +12,7 @@ Set-Location d:\
 
 # Download the file to a specific location
 Write-Output "Downloading zulu SDK "
-$source = "http://azure.azulsystems.com/zulu/zulu1.7.0_51-7.3.0.4-win64.zip?jenkins"
+$source = "http://cdn.azul.com/zulu/bin/zulu8.21.0.1-jdk8.0.131-win_x64.zip"
 mkdir d:\azurecsdir
 $destination = "d:\azurecsdir\zuluJDK.zip"
 $wc = New-Object System.Net.WebClient
@@ -36,7 +36,7 @@ $wc.DownloadFile($slaveSource, $destSource)
 
 # execute agent
 Write-Output "Executing agent process "
-$java = "d:\java\zulu1.7.0_51-7.3.0.4-win64\bin\java.exe"
+$java = "d:\java\zulu8.21.0.1-jdk8.0.131-win_x64\bin\java.exe"
 $jar = "-jar"
 $jnlpUrl = "-jnlpUrl"
 $secretFlag = "-secret"
