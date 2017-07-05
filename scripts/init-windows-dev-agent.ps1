@@ -3,6 +3,9 @@ $jenkinsserverurl = $args[0]
 $vmname = $args[1]
 $secret = $args[2]
 
+# disable the git credential manager
+git config --system --unset credential.helper
+
 #make sure we can build Jenkins plugins
 mkdir c:\.m2
 $wcs = New-Object System.Net.WebClient
