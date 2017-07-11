@@ -7,13 +7,11 @@ properties([
         string(defaultValue: 'master', description: '', name: 'template_branch')])
 ])
 
-def utils_location = "https://raw.githubusercontent.com/Azure/azure-devops-utils/v0.12.0/"
-
-def DeployJenkinsSolutionTemplate(scenario_name, options) {
+def DeploySpinnakerSolutionTemplate(scenario_name, options) {
     checkout scm
 
     def template_base_url = "https://raw.githubusercontent.com/" + params.template_fork + "/azure-devops-utils/"+ params.template_branch + "/"
-    def template_url = template_base_url + "/solution_template/jenkins/mainTemplate.json"
+    def template_url = template_base_url + "/solution_template/spinnaker/mainTemplate.json"
     def ssh_command = ""
 
     def params = [:]
@@ -30,7 +28,6 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
     params['storageAccountType'] = ['value' : options.storageType]
     params['publicIPName'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '')]
     params['dnsPrefix'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '')]
-    params['jenkinsReleaseType'] = ['value' : options.jenkinsReleaseType]
 
     if (options.useSSHPublicKey) {
         params['authenticationType'] = ['value' : 'sshPublicKey']
@@ -81,12 +78,23 @@ def RunSolutionTemplateTests(options) {
     def socket = scenario_name + "/ssh-socket"
     node('quickstart-template') {
         try {
-            def ssh_command = DeployJenkinsSolutionTemplate(scenario_name, options)
+            def ssh_command = DeploySpinnakerSolutionTemplate(scenario_name, options)
 
             sh ssh_command + ' -S ' + socket + ' -fNTM -o "StrictHostKeyChecking=no"'
 
             try {
-                runJenkinsTests(sshCommand: ssh_command, utilsLocation: options.utilsLocation)
+                def spinnakerGateHealth = null
+                try {
+                    def response = sh(returnStdout: true, script: 'curl http://localhost:8084/health').trim()
+                    echo 'Spinnaker Gate Health: ' + response
+                    def slurper = new groovy.json.JsonSlurper()
+                    spinnakerGateHealth = slurper.parseText(response)
+                } catch (e) {
+                }
+
+                if (spinnakerGateHealth.status != "UP") {
+                    error("Spinnaker Gate service is not healthy.")
+                }
             } catch(e) {
             } finally {
                 sh ssh_command + ' -S ' + socket + ' -O exit'
@@ -107,11 +115,6 @@ def RunSolutionTemplateTests(options) {
 }
 
 try {
-    def jenkins_release_type = 'LTS'
-    if ( env.JOB_BASE_NAME.contains('weekly') ) {
-        jenkins_release_type = 'weekly'
-    }
-
     stage('Run Solution Template Tests') {
         Map tasks = [failFast: false]
         def options = []
@@ -127,9 +130,7 @@ try {
                                     useSSHPublicKey: publicKey,
                                     useExistingStorage: existingStorage,
                                     storageType: storageTypeStr,
-                                    useExistingPublicIP: existingPublicIP,
-                                    utilsLocation: utils_location,
-                                    jenkinsReleaseType: jenkins_release_type
+                                    useExistingPublicIP: existingPublicIP
                                 ])
                             }
                         }
