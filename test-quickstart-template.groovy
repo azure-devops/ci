@@ -87,14 +87,24 @@ node('quickstart-template') {
           sh 'az group delete -n ' + scenario_name + ' --yes'
         }
     } catch (e) {
-        def public_build_url = "$BUILD_URL".replaceAll("10.0.0.4:8080" , "devops-ci.westcentralus.cloudapp.azure.com")
-        withCredentials([string(credentialsId: 'TeamEmailAddress', variable: 'email_address')]) {
+        if ("$PUBLIC_URL" && "$TEAM_MAIL_ADDRESS") {
+            def public_build_url = "$BUILD_URL".replaceAll("$JENKINS_URL" , "$PUBLIC_URL")
             emailext (
                 attachLog: true,
                 subject: "Jenkins Job '$JOB_NAME' #$BUILD_NUMBER Failed",
                 body: public_build_url,
-                to: env.email_address
+                to: "$TEAM_MAIL_ADDRESS"
             )
+        } else {
+            def public_build_url = "$BUILD_URL".replaceAll("10.0.0.4:8080" , "devops-ci.westcentralus.cloudapp.azure.com")
+            withCredentials([string(credentialsId: 'TeamEmailAddress', variable: 'email_address')]) {
+                emailext (
+                    attachLog: true,
+                    subject: "Jenkins Job '$JOB_NAME' #$BUILD_NUMBER Failed",
+                    body: public_build_url,
+                    to: env.email_address
+                )
+            }
         }
         throw e
     } finally {
