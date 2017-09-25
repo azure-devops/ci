@@ -20,13 +20,11 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
     params['_artifactsLocation'] = ['value' : template_base_url]
     params['_artifactsLocationSasToken'] = ['value' : '']
     params['publicIPResourceGroup'] = ['value' : scenario_name]
-    params['storageAccountResourceGroup'] = ['value' : scenario_name]
     params['vmName'] = ['value' : (UUID.randomUUID().toString().replaceAll('-', '') + UUID.randomUUID().toString().replaceAll('-', '')).replaceAll('-', '').take(54) ]
     params['adminUserName'] = ['value' : 'testuser']
     params['adminPassword'] = ['value' : '']
     params['adminSSHPublicKey'] = ['value' : '']
     params['vmSize'] = ['value' : 'Standard_DS1_v2']
-    params['storageAccountName'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '').take(18)]
     params['storageAccountType'] = ['value' : options.storageType]
     params['publicIPName'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '')]
     params['dnsPrefix'] = ['value' : 'jnktst' + UUID.randomUUID().toString().replaceAll('-', '')]
@@ -39,17 +37,6 @@ def DeployJenkinsSolutionTemplate(scenario_name, options) {
         withCredentials([usernamePassword(credentialsId: 'AzDevOpsTestPassword', passwordVariable: 'admin_password', usernameVariable: 'admin_user_ignore')]) {
             params['adminPassword'] = ['value' : env.admin_password]
         }
-    }
-
-    if (options.useExistingStorage) {
-        params['storageAccountNewOrExisting'] = ['value' : 'existing']
-        def deploy_storage_script_path = 'scripts/deploy-storage-account.sh'
-        sh 'sudo chmod +x ' + deploy_storage_script_path
-        withCredentials([azureServicePrincipal(clientIdVariable: 'app_id', clientSecretVariable: 'app_key', credentialsId: 'DevOpsTesting')]) {
-            sh deploy_storage_script_path + ' -an ' + params['storageAccountName']['value'] + ' -rg ' + scenario_name + ' -sk ' + params['storageAccountType']['value'] + ' -ai ' + env.app_id + ' -ak ' + env.app_key
-        }
-    } else {
-        params['storageAccountNewOrExisting'] = ['value' : 'new']
     }
 
     if (options.useExistingPublicIP) {
