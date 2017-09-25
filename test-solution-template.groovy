@@ -103,23 +103,17 @@ try {
         Map tasks = [failFast: false]
         def options = []
         for (publicKey in [true, false]) {
-            for (existingStorage in [true, false]) {
-                for (storageTypeStr in ['Standard_LRS', 'Standard_GRS', 'Standard_RAGRS', 'Premium_LRS']) {
-                    //no need to verify the template for all existing storage account types
-                    if (existingStorage == false || storageTypeStr == 'Standard_LRS') {
-                        for (existingPublicIP in [true, false]) {
-                            if (existingPublicIP == false || storageTypeStr == 'Standard_LRS') {
-                                options.push([
-                                    name: 'SSH: ' + publicKey + ' Existing Storage: ' + existingStorage + ' Storage Type: ' + storageTypeStr + ' Existing Public IP: ' + existingPublicIP,
-                                    useSSHPublicKey: publicKey,
-                                    useExistingStorage: existingStorage,
-                                    storageType: storageTypeStr,
-                                    useExistingPublicIP: existingPublicIP,
-                                    utilsLocation: utils_location,
-                                    jenkinsReleaseType: jenkins_release_type
-                                ])
-                            }
-                        }
+            for (storageTypeStr in ['Standard_LRS', 'Premium_LRS']) {
+                for (existingPublicIP in [true, false]) {
+                    if (existingPublicIP == false || storageTypeStr == 'Standard_LRS') {
+                        options.push([
+                            name: 'SSH: ' + publicKey + ' Storage Type: ' + storageTypeStr + ' Existing Public IP: ' + existingPublicIP,
+                            useSSHPublicKey: publicKey,
+                            storageType: storageTypeStr,
+                            useExistingPublicIP: existingPublicIP,
+                            utilsLocation: utils_location,
+                            jenkinsReleaseType: jenkins_release_type
+                        ])
                     }
                 }
             }
