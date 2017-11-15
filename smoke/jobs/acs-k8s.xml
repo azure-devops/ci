@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.6.4">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/ArieShout/sample-acs-k8s-configs.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.microsoft.jenkins.acs.ACSDeploymentBuilder plugin="azure-acs@0.1.4">
+      <context>
+        <azureCredentialsId>sp</azureCredentialsId>
+        <resourceGroupName>$$resource-group$$</resourceGroupName>
+        <containerService>$$k8sName$$ | Kubernetes</containerService>
+        <sshCredentialsId>ssh-credential</sshCredentialsId>
+        <configFilePaths>src/main/kubernetes/nginx.yml</configFilePaths>
+        <enableConfigSubstitution>false</enableConfigSubstitution>
+        <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
+        <secretName></secretName>
+        <dcosDockerCredentialsPath></dcosDockerCredentialsPath>
+        <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>
+      </context>
+    </com.microsoft.jenkins.acs.ACSDeploymentBuilder>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
