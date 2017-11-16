@@ -17,6 +17,7 @@ use File::Copy;
 use File::Find;
 use File::Path qw(make_path remove_tree);
 use File::Spec;
+use Pod::Usage;
 
 use Data::Dumper;
 
@@ -48,7 +49,7 @@ GetOptions(\%options,
     'artifactsDir=s',
     'clean!',
     'verbose!',
-);
+) or pod2usage(2);
 
 if (not exists $options{targetDir}) {
     $options{targetDir} = File::Spec->catfile(abs_path("$Bin/.."), ".target-" . Helpers::random_string());
