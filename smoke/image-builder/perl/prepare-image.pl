@@ -13,7 +13,7 @@ use warnings;
 package main;
 
 use FindBin qw($Bin);
-use lib "$Bin/lib";
+use lib "$Bin/../../lib/perl";
 use Builder;
 use Getopt::Long qw(:config gnu_getopt no_ignore_case auto_version auto_help);
 use Data::Dumper;
@@ -86,14 +86,14 @@ $options{'all-plugins-list'} = list2cmdline(@plugins);
 $options{'built-plugins'} = list2cmdline(@{$options{'build-plugin'}});
 $options{'docker-copy-jpi'} = @{$options{'build-plugin'}} ? q{COPY plugins/*.jpi "$PLUGIN_DIR"} : "";
 
-process_file("$Bin/../Dockerfile.jenkins", $docker_root, \%options);
+process_file("$Bin/../Dockerfile", $docker_root, \%options);
 my $resolve_dependencies = File::Spec->catfile($docker_root, 'resolve-dependencies.sh');
 copy("$Bin/../bash/resolve-dependencies.sh", $resolve_dependencies);
 chmod 0755, $resolve_dependencies;
 
 chdir $docker_root;
 
-checked_run(qw(docker build -f Dockerfile.jenkins -t), $options{tag}, '.');
+checked_run(qw(docker build -t), $options{tag}, '.');
 
 __END__
 

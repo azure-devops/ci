@@ -37,6 +37,7 @@ GetOptions(\%options,
     'clientId|u=s',
     'clientSecret|p=s',
     'tenantId|t=s',
+    'image|jenkins-image|i=s',
     'resource-group|g=s',
     'location|l=s',
     'vmName=s',
@@ -51,11 +52,11 @@ GetOptions(\%options,
     'verbose!',
 ) or pod2usage(2);
 
-if (not exists $options{targetDir}) {
+if (not $options{targetDir}) {
     $options{targetDir} = File::Spec->catfile(abs_path("$Bin/.."), ".target-" . Helpers::random_string());
 }
 
-if (not exists $options{artifactsDir}) {
+if (not $options{artifactsDir}) {
     $options{artifactsDir} = File::Spec->catfile(abs_path("$Bin/.."), ".artifacts");
 }
 
@@ -77,6 +78,11 @@ throw_if_empty('Azure client ID', $options{clientId});
 throw_if_empty('Azure client secret', $options{clientSecret});
 throw_if_empty('Azure tenant ID', $options{tenantId});
 throw_if_empty('VM admin user', $options{adminUser});
+throw_if_empty('Jenkins image', $options{image});
+
+if (not checked_output(qw(docker images -q), $options{image})) {
+    die "Image '$options{image}' was not found.";
+}
 
 my $generated_key = 0;
 if (not exists $options{publicKeyFile} or not exists $options{privateKeyFile}) {
@@ -153,8 +159,8 @@ find(sub {
         return;
     }
     my $file = abs_path($File::Find::name);
-    if ($file =~ /^\Q$options{targetDir}\E/ || $file =~ /\.target/
-        || $file =~ /^\Q$options{artifactsDir}\E/ || $file =~ /\.artifacts/) {
+    if ($file =~ /^\Q$options{targetDir}\E/ || $file =~ qr{/\.target\b}
+        || $file =~ /^\Q$options{artifactsDir}\E/ || $file =~ qr{/\.artifacts\b}) {
         return;
     }
     my $rel = File::Spec->abs2rel($File::Find::name, "$Bin/..");
@@ -163,10 +169,7 @@ find(sub {
 }, "$Bin/..");
 chdir $options{targetDir};
 
-$options{jenkinsImage} = 'smoke-' . Helpers::random_string();
 $options{dockerProcessName} = 'smoke-' . Helpers::random_string();
-
-checked_run(qw(docker build -t), $options{jenkinsImage}, '.');
 
 my $jenkins_home = File::Spec->catfile($options{targetDir}, "jenkins_home");
 make_path($options{artifactsDir});
@@ -179,7 +182,12 @@ chmod 0777, $jenkins_home;
 # and output when the child process termiates, rather than interleaved.
 my $jenkins_pid = fork();
 if (!$jenkins_pid) {
-    my @commands = (qw(docker run -i -p8090:8080 -v), "$jenkins_home:/var/jenkins_home", '--name', $options{dockerProcessName}, $options{jenkinsImage});
+    my @commands = (qw(docker run -i -p8090:8080),
+        '-v', "$jenkins_home:/var/jenkins_home",
+        '-v', "$options{targetDir}:/opt",
+        '-v', "$options{targetDir}/groovy/init.groovy:/usr/share/jenkins/ref/init.groovy",
+        '--name', $options{dockerProcessName},
+        $options{image});
     my $command = list2cmdline(@commands);
     print_banner("Start Jenkins in Docker");
     log_info($command);
