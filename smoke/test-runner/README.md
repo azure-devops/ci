@@ -1,9 +1,10 @@
-# Smoke Test for Azure Jenkins Plugins
+# Smoke Test Runner for Azure Jenkins Plugins
 
 ## Prerequisites
 
+1. A Jenkins image build with the [Image Builder](../image-builder) 
 1. Azure Service Principal
-2. A Jenkins instance with the following tools / support:
+1. A Jenkins instance with the following tools / support:
    * Azure Credentials plugin, with the service principal configured
    * Git
    * Azure CLI.
@@ -19,12 +20,12 @@
     * Add an "Execute shell" build step, with the following code
        
        ```
-       cd smoke
+       cd smoke/test-runner
        perl perl/jenkins-smoke-test.pl
        ```
        
     * Add a post-build action "Archive the artifacts" with the following pattern:
     
        ```
-       smoke/.artifacts/*
+       smoke/test-runner/.artifacts/*
        ```
