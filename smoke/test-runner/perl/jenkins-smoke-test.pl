@@ -6,7 +6,7 @@ use warnings FATAL => 'all';
 package main;
 
 use FindBin qw($Bin);
-use lib "$Bin/lib";
+use lib "$Bin/../../lib/perl";
 use Getopt::Long qw(:config gnu_getopt no_ignore_case auto_version auto_help);
 use Helpers qw(:log :shell throw_if_empty random_string process_file);
 use SSHClient;
@@ -173,6 +173,7 @@ $options{dockerProcessName} = 'smoke-' . Helpers::random_string();
 
 my $jenkins_home = File::Spec->catfile($options{targetDir}, "jenkins_home");
 make_path($options{artifactsDir});
+remove_tree($jenkins_home);
 make_path($jenkins_home);
 chmod 0777, $jenkins_home;
 
@@ -182,10 +183,10 @@ chmod 0777, $jenkins_home;
 # and output when the child process termiates, rather than interleaved.
 my $jenkins_pid = fork();
 if (!$jenkins_pid) {
+    copy("$options{targetDir}/groovy/init.groovy", "$jenkins_home/init.groovy");
     my @commands = (qw(docker run -i -p8090:8080),
         '-v', "$jenkins_home:/var/jenkins_home",
         '-v', "$options{targetDir}:/opt",
-        '-v', "$options{targetDir}/groovy/init.groovy:/usr/share/jenkins/ref/init.groovy",
         '--name', $options{dockerProcessName},
         $options{image});
     my $command = list2cmdline(@commands);

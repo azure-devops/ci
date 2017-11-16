@@ -1,6 +1,0 @@
-FROM jenkins/jenkins:lts
-
-COPY bash/bootstrap-jenkins.sh /opt/bash/bootstrap-jenkins.sh
-
-RUN /opt/bash/bootstrap-jenkins.sh
-
