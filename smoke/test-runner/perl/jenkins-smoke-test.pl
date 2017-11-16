@@ -37,10 +37,9 @@ GetOptions(\%options,
     'clientId|u=s',
     'clientSecret|p=s',
     'tenantId|t=s',
-    'image|jenkins-image|i=s',
+    'image|i=s',
     'resource-group|g=s',
     'location|l=s',
-    'vmName=s',
     'adminUser=s',
     'publicKeyFile=s',
     'privateKeyFile=s',
@@ -53,7 +52,9 @@ GetOptions(\%options,
 ) or pod2usage(2);
 
 if (not $options{targetDir}) {
-    $options{targetDir} = File::Spec->catfile(abs_path("$Bin/.."), ".target-" . Helpers::random_string());
+    $options{targetDir} = File::Spec->catfile(abs_path("$Bin/.."), ".target");
+    log_info("Remove all contents in $options{targetDir}");
+    remove_tree($options{targetDir});
 }
 
 if (not $options{artifactsDir}) {
@@ -84,9 +85,11 @@ if (not checked_output(qw(docker images -q), $options{image})) {
     die "Image '$options{image}' was not found.";
 }
 
+make_path($options{targetDir});
+
 my $generated_key = 0;
 if (not exists $options{publicKeyFile} or not exists $options{privateKeyFile}) {
-    $options{privateKeyFile} = File::Spec->catfile(abs_path("$Bin/.."), ".ssh/id_rsa");
+    $options{privateKeyFile} = File::Spec->catfile(abs_path($options{targetDir}), ".ssh/id_rsa");
     $options{publicKeyFile} = $options{privateKeyFile} . '.pub';
     log_info("Generate SSH key at $options{privateKeyFile}");
     make_path(dirname($options{publicKeyFile}));
@@ -112,9 +115,6 @@ if ($generated_key) {
     print $options{publicKey}, "\n";
 }
 
-log_info("Remove all contents in $options{targetDir}");
-remove_tree($options{targetDir});
-make_path($options{targetDir});
 
 {
     local $main::verbose = 0;
@@ -136,12 +136,13 @@ if (!$options{'resource-group'}) {
 }
 
 if (!$options{k8sName}) {
-    $options{k8sDns} = Helpers::random_string(10);
-    $options{k8sName} = 'containerserivce-' . $options{k8sDns};
+    $options{k8sDns} = 'a'. Helpers::random_string(10);
+    $options{k8sName} = 'containerservice-' . $options{'resource-group'};
     process_file("$Bin/../conf/acs.parameters.json", File::Spec->catfile($options{targetDir}, 'conf'), \%options);
     checked_run(qw(az group deployment create --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-acs-kubernetes/azuredeploy.json),
         '--resource-group', $options{'resource-group'}, '--parameters', '@' . File::Spec->catfile($options{targetDir}, "conf/acs.parameters.json"));
-#    checked_run(qw(az acs create --orchestrator-type kubernetes --agent-count 1 --resource-group), $options{'resource-group'}, '--name', $options{k8sName}, '--ssh-key-value', $options{publicKeyFile});
+    # CLI doesn't support creation with existing service principal
+    #checked_run(qw(az acs create --orchestrator-type kubernetes --agent-count 1 --resource-group), $options{'resource-group'}, '--name', $options{k8sName}, '--ssh-key-value', $options{publicKeyFile});
 } else {
     $options{k8sDns} = $options{k8sName};
 }
@@ -297,13 +298,29 @@ jenkins-smoke-test.pl - Script to bootstrap and run the smoke tests for Azure Je
 jenkins-smoke-test.pl [options]
 
  Options:
-                                (Azure service principal <required>)
-   --subscriptionId|-s          subscription ID
-   --clientId|-u                client ID
-   --clientSecret|-p            client secret
-   --tenantId|-t                tenant ID
+ <Required>
+   --subscriptionId|-s          Subscription ID
+   --clientId|-u                Client ID
+   --clientSecret|-p            Client secret
+   --tenantId|-t                Tenant ID
 
-                                (Miscellaneous)
+   --image|-i                   The Jenkins image used to run the tests
+
+ <Optional>
+   --adminUser                  The user name to login to ACS cluster master or other VM
+   --publicKeyFile              The public key file used to create ACS cluster or other VM resources
+   --privateKeyFile             The private key file used to authenticate with ACS cluster master or other VM resources
+
+   --resource-group             The resource group that contains all the related resources
+                                It will be generated and created if not provided
+   --location                   The resource location for all the resources, default "Southeast Asia"
+   --k8sName                    The ACS resource name with Kubernetes orchestrator
+   --acrName                    The Azure Container Registry resource name
+
+   --targetDir                  The directory to store all the geneated resources
+   --artifactDir                The directory to store the build artifacts
+
+ <Miscellaneous>
    --verbose                    Turn on verbose output
    --help                       Show the help documentation
    --version                    Show the script version
