@@ -20,6 +20,7 @@ use File::Find;
 use File::Path qw(make_path remove_tree);
 use File::Spec;
 use Pod::Usage;
+use Socket;
 
 use Data::Dumper;
 
@@ -32,6 +33,7 @@ our %options = (
     clientSecret => $ENV{AZURE_CLIENT_SECRET},
     tenantId => $ENV{AZURE_TENANT_ID},
     adminUser => 'azureuser',
+    nsgAllowHost => [],
 );
 
 GetOptions(\%options,
@@ -49,6 +51,7 @@ GetOptions(\%options,
     'acrName=s',
     'targetDir=s',
     'artifactsDir=s',
+    'nsgAllowHost=s@',
     'clean!',
     'verbose!',
 ) or pod2usage(2);
@@ -82,6 +85,8 @@ throw_if_empty('Azure client secret', $options{clientSecret});
 throw_if_empty('Azure tenant ID', $options{tenantId});
 throw_if_empty('VM admin user', $options{adminUser});
 throw_if_empty('Jenkins image', $options{image});
+
+@{$options{nsgAllowHost}} = split(/,/, join(',', @{$options{nsgAllowHost}}));
 
 if (not checked_output(qw(docker images -q), $options{image})) {
     die "Image '$options{image}' was not found.";
@@ -137,12 +142,47 @@ if (!$options{'resource-group'}) {
     $options{'location'} = checked_output(qw(az group show --query location --output tsv -n), $options{'resource-group'});
 }
 
+sub add_nsg_rule {
+    my $resource_group = shift;
+    my @hosts = @_;
+
+    die "Resource gorup is empty" if not $resource_group;
+    return if not @hosts;
+
+    my $nsg_output = checked_output(qw(az network nsg list --query [].name --output tsv --resource-group), $resource_group);
+    my @master_nsgs = grep { /^k8s-master-/ } split(/\r?\n/, $nsg_output);
+    if (not @master_nsgs) {
+        log_warning("No Kubernetes master network security group found in resource group $resource_group.");
+    } else {
+        log_info("Found master network security group(s) in resource group $resource_group: " . join(', ', @master_nsgs));
+        for my $host (@hosts) {
+            $host =~ s/^\s+|\s+$//g;
+            if ($host !~ /^\d+(\.\d+){3}$/) {
+                my $ip = inet_ntoa(inet_aton($host));
+                log_info("Resolved $host to ip address $ip");
+                $host = $ip;
+            }
+            my $name = 'allow_' . join('_', $host =~ /([\w\d]+)/g) . '_' . Helpers::random_string();
+            for my $nsg (@master_nsgs) {
+                # chose a fixed priority 2017. it is not ideal but should be enough for the smoke test
+                checked_run(qw(az network nsg rule create --priority 2017 --destination-port-ranges 22),
+                    '--resource-group', $resource_group,
+                    '--nsg-name', $nsg,
+                    '--name', $name,
+                    '--source-address-prefixes', $host);
+            }
+        }
+    }
+}
+
 if (!$options{k8sName}) {
     $options{k8sDns} = 'a'. Helpers::random_string(10);
     $options{k8sName} = 'containerservice-' . $options{'resource-group'};
     process_file("$Bin/../conf/acs.parameters.json", File::Spec->catfile($options{targetDir}, 'conf'), \%options);
     checked_run(qw(az group deployment create --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-acs-kubernetes/azuredeploy.json),
         '--resource-group', $options{'resource-group'}, '--parameters', '@' . File::Spec->catfile($options{targetDir}, "conf/acs.parameters.json"));
+
+    add_nsg_rule($options{'resource-group'}, @{$options{nsgAllowHost}});
     # CLI doesn't support creation with existing service principal
     #checked_run(qw(az acs create --orchestrator-type kubernetes --agent-count 1 --resource-group), $options{'resource-group'}, '--name', $options{k8sName}, '--ssh-key-value', $options{publicKeyFile});
 } else {
@@ -321,6 +361,9 @@ jenkins-smoke-test.pl [options]
 
    --targetDir                  The directory to store all the geneated resources
    --artifactDir                The directory to store the build artifacts
+
+   --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
+                                created Kubernetes master network security group
 
  <Miscellaneous>
    --verbose                    Turn on verbose output

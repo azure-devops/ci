@@ -21,7 +21,8 @@
        
        ```
        cd smoke/test-runner
-       perl perl/jenkins-smoke-test.pl
+       perl perl/jenkins-smoke-test.pl --help
+       perl perl/jenkins-smoke-test.pl --image <jenkins-image-name>
        ```
        
     * Add a post-build action "Archive the artifacts" with the following pattern:
@@ -29,3 +30,17 @@
        ```
        smoke/test-runner/.artifacts/*
        ```
+
+## Extra Options
+
+* To use existing Kubernetes cluster and ACR instance (required to be in the same resource group),
+   specify the following arguments:
+   * `--resource-group`|`-g` - Resource group containing the K8s and ACR
+   * `--adminUser` - admin username for the K8s master
+   * `--privateKeyFile` - private key to authenticate with the K8s master
+   * `--k8sName` - name of the ACS Kubernetes cluster
+   * `--acrName` - name of the ACR
+
+* To add some hosts to the K8s network security group to allow them to access the master host via SSH:
+   * `--nsgAllowHost` - comma separated hosts that needs to be added the NSG allow list
+

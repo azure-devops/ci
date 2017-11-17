@@ -42,7 +42,8 @@ my %repo_of = map { ($_, "https://github.com/jenkinsci/$_-plugin.git") } @plugin
 
 my %options = (
     'jenkins-version' => 'lts',
-    verbose => 1
+    'build-plugin' => [],
+    verbose => 1,
 );
 
 GetOptions(\%options,
@@ -56,7 +57,6 @@ our $verbose = $options{verbose};
 
 throw_if_empty("Docker image tag", $options{tag});
 
-$options{'build-plugin'} ||= [];
 @{$options{'build-plugin'}} = split(/,/, join(',', @{$options{'build-plugin'}}));
 for (@{$options{'build-plugin'}}) {
     my ($id, $repo) = split(/=/, $_, 2);
