@@ -1,8 +1,10 @@
-#!/bin/bash 
+#!/bin/bash
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See LICENSE in the project root for license information.
 #===============================================================================
 #          FILE:  setup-jobs.sh
 # 
-#   DESCRIPTION:  
+#   DESCRIPTION:  Create Jenkins jobs from XML definitions and trigger the build of the jobs.
 # 
 #       CREATED: 11/14/2017 07:36:53 AM UTC
 #===============================================================================

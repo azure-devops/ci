@@ -1,10 +1,13 @@
 #!/usr/bin/env perl
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See LICENSE in the project root for license information.
+
 #===============================================================================
 #         FILE:  prepare-image.pl
 #
-#  DESCRIPTION:  
+#  DESCRIPTION:  Build Jenkins docker image with all Azure Jenkins plugins installed.
+#                You may also specify some of the plugins to be built from source.
 #
-#       AUTHOR:  ArieShout, arieshout@gmail.com
 #      CREATED:  2017-11-15 08:46
 #===============================================================================
 use strict;
