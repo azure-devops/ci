@@ -33,6 +33,9 @@ our %options = (
     clientSecret => $ENV{AZURE_CLIENT_SECRET},
     tenantId => $ENV{AZURE_TENANT_ID},
     adminUser => 'azureuser',
+    testConfigRepo => 'https://github.com/azure-devops/ci.git',
+    testConfigBranch => 'master',
+    testConfigRoot => 'smoke/test-configs',
     nsgAllowHost => [],
 );
 
@@ -51,6 +54,9 @@ GetOptions(\%options,
     'acrName=s',
     'targetDir=s',
     'artifactsDir=s',
+    'testConfigRepo=s',
+    'testConfigRoot=s',
+    'testConfigBranch=s',
     'nsgAllowHost=s@',
     'clean!',
     'verbose!',
@@ -72,6 +78,8 @@ if (not $options{artifactsDir}) {
     print Data::Dumper->Dump([\%options], ["options"]);
     $options{clientSecret} = $secret;
 }
+
+$options{testConfigRoot} =~ s/[\\\/]+$//;
 
 our $verbose = $options{verbose};
 
@@ -364,6 +372,10 @@ jenkins-smoke-test.pl [options]
 
    --targetDir                  The directory to store all the geneated resources
    --artifactDir                The directory to store the build artifacts
+
+   --testConfigRepo             Repository URL for the test configs, default "https://github.com/azure-devops/ci.git"
+   --testConfigBranch           Branch of the test configs, default "master"
+   --testConfigRoot             Root directory for all the test configs, default "smoke/test-configs"
 
    --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                 created Kubernetes master network security group

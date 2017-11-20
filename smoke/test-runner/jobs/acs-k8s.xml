@@ -12,12 +12,12 @@ Licensed under the MIT License. See LICENSE in the project root for license info
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
-        <url>https://github.com/ArieShout/sample-acs-k8s-configs.git</url>
+        <url>$$testConfigRepo$$</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/master</name>
+        <name>*/$$testConfigBranch$$</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -37,7 +37,7 @@ Licensed under the MIT License. See LICENSE in the project root for license info
         <resourceGroupName>$$resource-group$$</resourceGroupName>
         <containerService>$$k8sName$$ | Kubernetes</containerService>
         <sshCredentialsId>ssh-credential</sshCredentialsId>
-        <configFilePaths>src/main/kubernetes/nginx.yml</configFilePaths>
+        <configFilePaths>$$testConfigRoot$$/acs/acs-k8s-public.yml</configFilePaths>
         <enableConfigSubstitution>false</enableConfigSubstitution>
         <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
         <secretName></secretName>

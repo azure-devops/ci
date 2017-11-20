@@ -12,11 +12,11 @@
     <script><![CDATA[
 node {
     stage('SCM') {
-        git 'https://github.com/ArieShout/sample-acs-k8s-configs.git'
+        git branch: '$$testConfigBranch$$', url: '$$testConfigRepo$$'
     }
     
     stage('Deploy') {
-        kubernetesDeploy configs: 'src/main/kubernetes/nginx.yml',
+        kubernetesDeploy configs: '$$testConfigRoot$$/kubernetes/k8s-public-pipeline.yml',
             credentialsType: 'SSH',
             ssh: [sshCredentialsId: 'ssh-credential', sshServer: '$$k8s-master-host$$']
     }

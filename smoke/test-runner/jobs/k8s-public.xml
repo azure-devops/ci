@@ -7,12 +7,12 @@
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
-        <url>https://github.com/ArieShout/sample-acs-k8s-configs.git</url>
+        <url>$$testConfigRepo$$</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/master</name>
+        <name>*/$$testConfigBranch$$</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -33,16 +33,7 @@
           <sshServer>$$k8s-master-host$$</sshServer>
           <sshCredentialsId>ssh-credential</sshCredentialsId>
         </ssh>
-        <kubeConfig>
-          <path></path>
-        </kubeConfig>
-        <textCredentials>
-          <serverUrl>https://</serverUrl>
-          <certificateAuthorityData></certificateAuthorityData>
-          <clientCertificateData></clientCertificateData>
-          <clientKeyData></clientKeyData>
-        </textCredentials>
-        <configs>src/main/kubernetes/nginx.yml</configs>
+        <configs>$$testConfigRoot$$/kubernetes/k8s-public.yml</configs>
         <enableConfigSubstitution>true</enableConfigSubstitution>
         <secretName></secretName>
       </context>
