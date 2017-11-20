@@ -189,6 +189,9 @@ if (!$options{k8sName}) {
     $options{k8sDns} = $options{k8sName};
 }
 
+$options{'k8s-master-host'} = checked_output(qw(az acs show --query masterProfile.fqdn --output tsv -g), $options{'resource-group'}, '-n', $options{k8sName});
+throw_if_empty('K8s master host', $options{'k8s-master-host'});
+
 if (!$options{acrName}) {
     $options{acrName} = 'acr' . Helpers::random_string();
     checked_run(qw(az acr create --sku Basic --admin-enabled true --resource-group), $options{'resource-group'}, '--name', $options{acrName});

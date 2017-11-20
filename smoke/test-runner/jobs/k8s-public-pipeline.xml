@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.15">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers/>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.41">
+    <script><![CDATA[
+node {
+    stage('SCM') {
+        git 'https://github.com/ArieShout/sample-acs-k8s-configs.git'
+    }
+    
+    stage('Deploy') {
+        kubernetesDeploy configs: 'src/main/kubernetes/nginx.yml',
+            credentialsType: 'SSH',
+            ssh: [sshCredentialsId: 'ssh-credential', sshServer: '$$k8s-master-host$$']
+    }
+}
+]]></script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
