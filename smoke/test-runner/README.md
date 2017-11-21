@@ -44,3 +44,52 @@
 * To add some hosts to the K8s network security group to allow them to access the master host via SSH:
    * `--nsgAllowHost` - comma separated hosts that needs to be added the NSG allow list
 
+* To use different git repository for the test configs which will be loaded by the Jenkins jobs, 
+   specify the test configs repository details as followed. This may help if the configs are still under
+   development.
+   * `--testConfigRepo` - Repository URL for the test configs, default `https://github.com/azure-devops/ci.git`
+   * `--testConfigBranch` - Branch of the test configs, default `master`
+   * `--testConfigRoot` - Root directory for all the test configs, default `smoke/test-configs`
+
+## Usage Documentation
+
+```
+$ perl/jenkins-smoke-test.pl --help
+Usage:
+    jenkins-smoke-test.pl [options]
+
+     Options:
+     <Required>
+       --subscriptionId|-s          Subscription ID
+       --clientId|-u                Client ID
+       --clientSecret|-p            Client secret
+       --tenantId|-t                Tenant ID
+
+       --image|-i                   The Jenkins image used to run the tests
+
+     <Optional>
+       --adminUser                  The user name to login to ACS cluster master or other VM
+       --publicKeyFile              The public key file used to create ACS cluster or other VM resources
+       --privateKeyFile             The private key file used to authenticate with ACS cluster master or other VM resources
+
+       --resource-group             The resource group that contains all the related resources
+                                    It will be generated and created if not provided
+       --location                   The resource location for all the resources, default "Southeast Asia"
+       --k8sName                    The ACS resource name with Kubernetes orchestrator
+       --acrName                    The Azure Container Registry resource name
+
+       --targetDir                  The directory to store all the geneated resources
+       --artifactDir                The directory to store the build artifacts
+
+       --testConfigRepo             Repository URL for the test configs, default "https://github.com/azure-devops/ci.git"
+       --testConfigBranch           Branch of the test configs, default "master"
+       --testConfigRoot             Root directory for all the test configs, default "smoke/test-configs"
+
+       --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
+                                    created Kubernetes master network security group
+
+     <Miscellaneous>
+       --verbose                    Turn on verbose output
+       --help                       Show the help documentation
+       --version                    Show the script version
+```
