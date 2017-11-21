@@ -37,6 +37,7 @@ our %options = (
     testDataBranch => 'master',
     testDataRoot => 'smoke/test-data',
     nsgAllowHost => [],
+    skipProcessing => [qw(md jar pl pm)]
 );
 
 GetOptions(\%options,
@@ -58,6 +59,7 @@ GetOptions(\%options,
     'testDataRoot=s',
     'testDataBranch=s',
     'nsgAllowHost=s@',
+    'skipProcessing=s@',
     'clean!',
     'verbose!',
 ) or pod2usage(2);
@@ -95,6 +97,7 @@ throw_if_empty('VM admin user', $options{adminUser});
 throw_if_empty('Jenkins image', $options{image});
 
 @{$options{nsgAllowHost}} = split(/,/, join(',', @{$options{nsgAllowHost}}));
+@{$options{skipProcessing}} = split(/,/, join(',', @{$options{skipProcessing}}));
 
 if (not checked_output(qw(docker images -q), $options{image})) {
     die "Image '$options{image}' was not found.";
@@ -217,11 +220,17 @@ checked_run(qw(docker pull nginx));
 checked_run(qw(docker tag nginx), $options{acrPrivateImageName});
 checked_run(qw(docker push), $options{acrPrivateImageName});
 
+my %skip_processing = map { ($_, 1) } @{$options{skipProcessing}};
+
 find(sub {
     if (-d $_) {
         return;
     }
     my $file = abs_path($File::Find::name);
+    my ($extension) = /\.([^\.]+)$/;
+    if (defined $extension and exists $skip_processing{$extension}) {
+        return;
+    }
     if ($file =~ /^\Q$options{targetDir}\E/ || $file =~ qr{/\.target\b}
         || $file =~ /^\Q$options{artifactsDir}\E/ || $file =~ qr{/\.artifacts\b}) {
         return;
@@ -385,6 +394,9 @@ jenkins-smoke-test.pl [options]
    --testDataRepo               Repository URL for the test data, default "https://github.com/azure-devops/ci.git"
    --testDataBranch             Branch of the test data, default "master"
    --testDataRoot               Root directory for all the test data, default "smoke/test-data"
+
+   --skipProcessing             List of file extensions that should not be processed for the $$option$$ replacement,
+                                default md, jar, pl, pm.
 
    --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                 created Kubernetes master network security group

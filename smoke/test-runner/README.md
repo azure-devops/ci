@@ -85,6 +85,9 @@ Usage:
        --testDataBranch             Branch of the test data, default "master"
        --testDataRoot               Root directory for all the test data, default "smoke/test-data"
 
+       --skipProcessing             List of file extensions that should not be processed for the $$option$$ replacement,
+                                    default md, jar, pl, pm.
+
        --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                     created Kubernetes master network security group
 
