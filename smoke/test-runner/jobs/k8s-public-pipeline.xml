@@ -12,11 +12,11 @@
     <script><![CDATA[
 node {
     stage('SCM') {
-        git branch: '$$testConfigBranch$$', url: '$$testConfigRepo$$'
+        git branch: '$$testDataBranch$$', url: '$$testDataRepo$$'
     }
     
     stage('Deploy') {
-        kubernetesDeploy configs: '$$testConfigRoot$$/kubernetes/k8s-public-pipeline.yml',
+        kubernetesDeploy configs: '$$testDataRoot$$/kubernetes/k8s-public-pipeline.yml',
             credentialsType: 'SSH',
             ssh: [sshCredentialsId: 'ssh-credential', sshServer: '$$k8s-master-host$$']
     }

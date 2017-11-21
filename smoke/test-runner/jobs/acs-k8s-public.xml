@@ -12,12 +12,12 @@ Licensed under the MIT License. See LICENSE in the project root for license info
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
-        <url>$$testConfigRepo$$</url>
+        <url>$$testDataRepo$$</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/$$testConfigBranch$$</name>
+        <name>*/$$testDataBranch$$</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -37,7 +37,7 @@ Licensed under the MIT License. See LICENSE in the project root for license info
         <resourceGroupName>$$resource-group$$</resourceGroupName>
         <containerService>$$k8sName$$ | Kubernetes</containerService>
         <sshCredentialsId>ssh-credential</sshCredentialsId>
-        <configFilePaths>$$testConfigRoot$$/acs/acs-k8s-public.yml</configFilePaths>
+        <configFilePaths>$$testDataRoot$$/acs/acs-k8s-public.yml</configFilePaths>
         <enableConfigSubstitution>false</enableConfigSubstitution>
         <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
         <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>

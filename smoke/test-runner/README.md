@@ -10,7 +10,7 @@
    * Azure CLI.
    * Docker. The user running Jenkins process should have permission to build and run docker images.
 
-## How to test
+## How to Test
 
 1. Add Azure service principal credential to the Jenkins instance.
 2. Create a new freestyle job
@@ -47,9 +47,9 @@
 * To use different git repository for the test configs which will be loaded by the Jenkins jobs, 
    specify the test configs repository details as followed. This may help if the configs are still under
    development.
-   * `--testConfigRepo` - Repository URL for the test configs, default `https://github.com/azure-devops/ci.git`
-   * `--testConfigBranch` - Branch of the test configs, default `master`
-   * `--testConfigRoot` - Root directory for all the test configs, default `smoke/test-configs`
+   * `--testDataRepo` - Repository URL for the test data, default `https://github.com/azure-devops/ci.git`
+   * `--testDataBranch` - Branch of the test data, default `master`
+   * `--testDataRoot` - Root directory for all the test data, default `smoke/test-data`
 
 ## Usage Documentation
 
@@ -81,9 +81,9 @@ Usage:
        --targetDir                  The directory to store all the geneated resources
        --artifactDir                The directory to store the build artifacts
 
-       --testConfigRepo             Repository URL for the test configs, default "https://github.com/azure-devops/ci.git"
-       --testConfigBranch           Branch of the test configs, default "master"
-       --testConfigRoot             Root directory for all the test configs, default "smoke/test-configs"
+       --testDataRepo               Repository URL for the test data, default "https://github.com/azure-devops/ci.git"
+       --testDataBranch             Branch of the test data, default "master"
+       --testDataRoot               Root directory for all the test data, default "smoke/test-data"
 
        --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                     created Kubernetes master network security group
@@ -93,3 +93,19 @@ Usage:
        --help                       Show the help documentation
        --version                    Show the script version
 ```
+
+## How to Write Test Cases
+
+To write test cases for the Azure Jenkins plugins, add configuration files in:
+
+* `smoke/test-runner/jobs`: XML configurations to define the job, which can be copied out from 
+   `$JENKINS_HOME/jobs/<job-name>/config.xml`. Rename the config file to `<job-name>.xml`. They
+   will be processed before the Jenkins process is started, so **the `$$<option>$$` segment
+   will be replaced with the corresponding option from the start up Perl script**.
+* `smoke/test-data/`: The test data root directory. This defines the configurations or other
+   data that is required or to be deployed to the Azure infrastructure. Examples are Kubernetes
+   configuration files for ACS / Kubernetes deployment tests, WebApp configurations to be deployed
+   in WebApp deployment tests, etc. **They will be loaded during the Jenkins build, so it should
+   be considered as static.** If you need to replace any of the contents there, you need to do it
+   in the standard Jenkins way, e.g., add another extra build step to process the file, or use
+   environment variable replace functions if the plugin provides.

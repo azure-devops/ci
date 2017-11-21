@@ -7,12 +7,12 @@
         <configVersion>2</configVersion>
         <userRemoteConfigs>
             <hudson.plugins.git.UserRemoteConfig>
-                <url>$$testConfigRepo$$</url>
+                <url>$$testDataRepo$$</url>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>*/$$testConfigBranch$$</name>
+                <name>*/$$testDataBranch$$</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
         <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -32,7 +32,7 @@
                 <resourceGroupName>$$resource-group$$</resourceGroupName>
                 <containerService>$$k8sName$$ | Kubernetes</containerService>
                 <sshCredentialsId>ssh-credential</sshCredentialsId>
-                <configFilePaths>$$testConfigRoot$$/acs/acs-k8s-private.yml</configFilePaths>
+                <configFilePaths>$$testDataRoot$$/acs/acs-k8s-private.yml</configFilePaths>
                 <enableConfigSubstitution>true</enableConfigSubstitution>
                 <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
                 <secretName>nginx-private-secret</secretName>
@@ -47,5 +47,16 @@
         </com.microsoft.jenkins.acs.ACSDeploymentBuilder>
     </builders>
     <publishers/>
-    <buildWrappers/>
+    <buildWrappers>
+        <EnvInjectBuildWrapper plugin="envinject@2.1.5">
+            <info>
+                <propertiesContent>ACR_PRIVATE_IMAGE_NAME=$$acrPrivateImageName$$</propertiesContent>
+                <secureGroovyScript plugin="script-security@1.35">
+                    <script></script>
+                    <sandbox>false</sandbox>
+                </secureGroovyScript>
+                <loadFilesFromMaster>false</loadFilesFromMaster>
+            </info>
+        </EnvInjectBuildWrapper>
+    </buildWrappers>
 </project>

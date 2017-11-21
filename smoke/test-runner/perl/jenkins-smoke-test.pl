@@ -33,9 +33,9 @@ our %options = (
     clientSecret => $ENV{AZURE_CLIENT_SECRET},
     tenantId => $ENV{AZURE_TENANT_ID},
     adminUser => 'azureuser',
-    testConfigRepo => 'https://github.com/azure-devops/ci.git',
-    testConfigBranch => 'master',
-    testConfigRoot => 'smoke/test-configs',
+    testDataRepo => 'https://github.com/azure-devops/ci.git',
+    testDataBranch => 'master',
+    testDataRoot => 'smoke/test-data',
     nsgAllowHost => [],
 );
 
@@ -54,9 +54,9 @@ GetOptions(\%options,
     'acrName=s',
     'targetDir=s',
     'artifactsDir=s',
-    'testConfigRepo=s',
-    'testConfigRoot=s',
-    'testConfigBranch=s',
+    'testDataRepo=s',
+    'testDataRoot=s',
+    'testDataBranch=s',
     'nsgAllowHost=s@',
     'clean!',
     'verbose!',
@@ -79,7 +79,7 @@ if (not $options{artifactsDir}) {
     $options{clientSecret} = $secret;
 }
 
-$options{testConfigRoot} =~ s/[\\\/]+$//;
+$options{testDataRoot} =~ s/[\\\/]+$//;
 
 our $verbose = $options{verbose};
 
@@ -382,9 +382,9 @@ jenkins-smoke-test.pl [options]
    --targetDir                  The directory to store all the geneated resources
    --artifactDir                The directory to store the build artifacts
 
-   --testConfigRepo             Repository URL for the test configs, default "https://github.com/azure-devops/ci.git"
-   --testConfigBranch           Branch of the test configs, default "master"
-   --testConfigRoot             Root directory for all the test configs, default "smoke/test-configs"
+   --testDataRepo               Repository URL for the test data, default "https://github.com/azure-devops/ci.git"
+   --testDataBranch             Branch of the test data, default "master"
+   --testDataRoot               Root directory for all the test data, default "smoke/test-data"
 
    --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                 created Kubernetes master network security group

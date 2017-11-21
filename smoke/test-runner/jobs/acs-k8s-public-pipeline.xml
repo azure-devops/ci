@@ -12,7 +12,7 @@
         <script><![CDATA[
 node {
     stage('SCM') {
-        git branch: '$$testConfigBranch$$', url: '$$testConfigRepo$$'
+        git branch: '$$testDataBranch$$', url: '$$testDataRepo$$'
     }
 
     stage('Deploy') {
@@ -20,7 +20,7 @@ node {
             resourceGroupName: '$$resource-group$$',
             containerService: '$$k8sName$$ | Kubernetes',
             sshCredentialsId: 'ssh-credential',
-            configFilePaths: '$$testConfigRoot$$/acs/acs-k8s-public-pipeline.yml'
+            configFilePaths: '$$testDataRoot$$/acs/acs-k8s-public-pipeline.yml'
     }
 }
 ]]></script>

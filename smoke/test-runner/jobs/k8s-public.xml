@@ -7,12 +7,12 @@
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
-        <url>$$testConfigRepo$$</url>
+        <url>$$testDataRepo$$</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/$$testConfigBranch$$</name>
+        <name>*/$$testDataBranch$$</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -33,7 +33,7 @@
           <sshServer>$$k8s-master-host$$</sshServer>
           <sshCredentialsId>ssh-credential</sshCredentialsId>
         </ssh>
-        <configs>$$testConfigRoot$$/kubernetes/k8s-public.yml</configs>
+        <configs>$$testDataRoot$$/kubernetes/k8s-public.yml</configs>
         <enableConfigSubstitution>true</enableConfigSubstitution>
         <secretName></secretName>
       </context>

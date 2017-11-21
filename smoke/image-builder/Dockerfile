@@ -26,6 +26,7 @@ RUN set -x && \
         pam-auth \
         ldap \
         email-ext \
+        envinject \
         mailer $$all-plugins-list$$
 
 $$docker-copy-jpi$$
