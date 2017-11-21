@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@3.6.4">
+        <configVersion>2</configVersion>
+        <userRemoteConfigs>
+            <hudson.plugins.git.UserRemoteConfig>
+                <url>$$testConfigRepo$$</url>
+            </hudson.plugins.git.UserRemoteConfig>
+        </userRemoteConfigs>
+        <branches>
+            <hudson.plugins.git.BranchSpec>
+                <name>*/$$testConfigBranch$$</name>
+            </hudson.plugins.git.BranchSpec>
+        </branches>
+        <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+        <submoduleCfg class="list"/>
+        <extensions/>
+    </scm>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <com.microsoft.jenkins.acs.ACSDeploymentBuilder plugin="azure-acs@0.1.4">
+            <context>
+                <azureCredentialsId>sp</azureCredentialsId>
+                <resourceGroupName>$$resource-group$$</resourceGroupName>
+                <containerService>$$k8sName$$ | Kubernetes</containerService>
+                <sshCredentialsId>ssh-credential</sshCredentialsId>
+                <configFilePaths>$$testConfigRoot$$/acs/acs-k8s-private.yml</configFilePaths>
+                <enableConfigSubstitution>true</enableConfigSubstitution>
+                <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
+                <secretName>nginx-private-secret</secretName>
+                <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>
+                <containerRegistryCredentials>
+                    <org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint plugin="docker-commons@1.9">
+                        <url>http://$$acrHost$$</url>
+                        <credentialsId>acr</credentialsId>
+                    </org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint>
+                </containerRegistryCredentials>
+            </context>
+        </com.microsoft.jenkins.acs.ACSDeploymentBuilder>
+    </builders>
+    <publishers/>
+    <buildWrappers/>
+</project>

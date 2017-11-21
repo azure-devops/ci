@@ -132,7 +132,7 @@ if ($generated_key) {
 
 
 {
-    local $main::verbose = 0;
+    local $main::verbose;
     checked_run(qw(az login --service-principal -u), $options{clientId}, '-p', $options{clientSecret}, '-t',
         $options{tenantId});
 }
@@ -207,6 +207,15 @@ if (!$options{acrName}) {
 
 $options{acrHost} = checked_output(qw(az acr show --query loginServer --output tsv --resource-group), $options{'resource-group'}, '--name', $options{acrName});
 $options{acrPassword} = checked_output(qw(az acr credential show --query passwords[0].value --output tsv --name), $options{acrName});
+
+{
+    local $main::verbose;
+    checked_run(qw(docker login -u), $options{acrName}, '-p', $options{acrPassword}, $options{acrHost});
+}
+$options{acrPrivateImageName} = $options{acrHost} . '/nginx-private';
+checked_run(qw(docker pull nginx));
+checked_run(qw(docker tag nginx), $options{acrPrivateImageName});
+checked_run(qw(docker push), $options{acrPrivateImageName});
 
 find(sub {
     if (-d $_) {

@@ -1,33 +1,16 @@
----
-apiVersion: v1
-kind: List
-items:
-- kind: Service
-  apiVersion: v1
-  metadata:
-    name: acs-k8s-public-pipeline-service
-    labels:
-      app: acs-k8s-public-pipeline
-  spec:
-    type: LoadBalancer
-    selector:
-      app: acs-k8s-public-pipeline
-    ports:
-      - port: 80
-        targetPort: 80
-- apiVersion: extensions/v1beta1
-  kind: Deployment
-  metadata:
-    name: acs-k8s-public-pipeline-deployment
-  spec:
-    replicas: 1
-    template:
-      metadata:
-        labels:
-          app: acs-k8s-public-pipeline
-      spec:
-        containers:
-        - name: acs-k8s-public-pipeline-container
-          image: nginx
-          ports:
-          - containerPort: 80
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: acs-k8s-public-pipeline-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acs-k8s-public-pipeline
+    spec:
+      containers:
+      - name: acs-k8s-public-pipeline-container
+        image: nginx
+        ports:
+        - containerPort: 80

@@ -40,8 +40,6 @@ Licensed under the MIT License. See LICENSE in the project root for license info
         <configFilePaths>$$testConfigRoot$$/acs/acs-k8s-public.yml</configFilePaths>
         <enableConfigSubstitution>false</enableConfigSubstitution>
         <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
-        <secretName></secretName>
-        <dcosDockerCredentialsPath></dcosDockerCredentialsPath>
         <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>
       </context>
     </com.microsoft.jenkins.acs.ACSDeploymentBuilder>

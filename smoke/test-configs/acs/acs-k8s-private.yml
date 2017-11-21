@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: acs-k8s-private-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acs-k8s-private
+    spec:
+      containers:
+      - name: acs-k8s-private-container
+        image: $$acrPrivateImageName$$
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+      - name: $KUBERNETES_SECRET_NAME
