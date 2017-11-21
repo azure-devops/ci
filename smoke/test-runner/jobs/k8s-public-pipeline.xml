@@ -14,11 +14,11 @@ node {
     stage('SCM') {
         git branch: '$$testDataBranch$$', url: '$$testDataRepo$$'
     }
-    
+
     stage('Deploy') {
         kubernetesDeploy configs: '$$testDataRoot$$/kubernetes/k8s-public-pipeline.yml',
             credentialsType: 'SSH',
-            ssh: [sshCredentialsId: 'ssh-credential', sshServer: '$$k8s-master-host$$']
+            ssh: [sshCredentialsId: 'ssh-credential', sshServer: '$$k8sMasterHost$$']
     }
 }
 ]]></script>

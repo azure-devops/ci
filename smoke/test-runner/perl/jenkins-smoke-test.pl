@@ -20,6 +20,7 @@ use File::Find;
 use File::Path qw(make_path remove_tree);
 use File::Spec;
 use Pod::Usage;
+use POSIX qw(strftime);
 use Socket;
 
 use Data::Dumper;
@@ -27,42 +28,97 @@ use Data::Dumper;
 our $VERSION = 0.1.0;
 
 our %options = (
-    verbose => 1,
     subscriptionId => $ENV{AZURE_SUBSCRIPTION_ID},
     clientId => $ENV{AZURE_CLIENT_ID},
     clientSecret => $ENV{AZURE_CLIENT_SECRET},
     tenantId => $ENV{AZURE_TENANT_ID},
     adminUser => 'azureuser',
+    suffix => strftime("%m%d", localtime()) . Helpers::random_string(4),
+    location => 'Southeast Asia',
     testDataRepo => 'https://github.com/azure-devops/ci.git',
     testDataBranch => 'master',
     testDataRoot => 'smoke/test-data',
     nsgAllowHost => [],
-    skipProcessing => [qw(md jar pl pm)]
+    skipExt => [qw(md jar pl pm)],
+    clean => 1,
+    verbose => 1,
 );
 
 GetOptions(\%options,
-    'subscriptionId|s=s',
-    'clientId|u=s',
-    'clientSecret|p=s',
-    'tenantId|t=s',
+    'subscriptionId|subscription-id|s=s',
+    'clientId|client-id|u=s',
+    'clientSecret|client-secret|p=s',
+    'tenantId|tenant-id|t=s',
     'image|i=s',
-    'resource-group|g=s',
     'location|l=s',
-    'adminUser=s',
-    'publicKeyFile=s',
-    'privateKeyFile=s',
-    'k8sName=s',
-    'acrName=s',
-    'targetDir=s',
-    'artifactsDir=s',
-    'testDataRepo=s',
-    'testDataRoot=s',
-    'testDataBranch=s',
-    'nsgAllowHost=s@',
-    'skipProcessing=s@',
+    'adminUser|admin-user=s',
+    'publicKeyFile|public-key-file=s',
+    'privateKeyFile|private-key-file=s',
+    # common resource name suffix
+    'suffix=s',
+    # options for ACS resources
+    'acsResourceGroup|acs-resource-group=s',
+    'acsK8sName|acs-k8s-name=s',
+    # options for ACR
+    'acrResourceGroup|acr-resource-group=s',
+    'acrName|acr-name=s',
+    # options for Azure WebApp (Linux)
+    'webappResourceGroup|webapp-resource-group=s',
+    'webappPlan|webapp-plan=s',
+    'webappName|webapp-name=s',
+    # options for Azure WebApp (Win)
+    'webappwinResourceGroup|webappwin-resource-group=s',
+    'webappwinPlan|webappwin-plan=s',
+    'webappwinName|webappwin-name=s',
+    # options for Azure Function
+    'funcResourceGroup|func-resource-group=s',
+    'funcStorageAccount|func-storage-account=s',
+    'funcName|func-name=s',
+    # options for VM Agents
+    'vmResourceGroup|vm-resource-group=s',
+    'targetDir|target-dir=s',
+    'artifactsDir|artifacts-dir=s',
+    'testDataRepo|test-data-repo=s',
+    'testDataRoot|test-data-root=s',
+    'testDataBranch|test-data-branch=s',
+    'nsgAllowHost|nsg-allow-host=s@',
+    'skipExt|skip-ext=s@',
     'clean!',
     'verbose!',
 ) or pod2usage(2);
+
+sub normalize {
+    my ($key, $prefix) = @_;
+    $options{$key} ||= $prefix . $options{suffix};
+}
+
+# Options for ACS resources
+normalize('acsResourceGroup', 'jksmoke-k8s-');
+# TODO allow specifying the K8s name
+normalize('acsK8sName', 'containerservice-jksmoke-k8s-');
+normalize('acsK8sDns', 'acsk8s');
+
+# Options for ACR
+normalize('acrResourceGroup', 'jksmoke-acr-');
+normalize('acrName', 'jksmokeacr');
+
+# Options for Azure WebApp (Linux)
+normalize('webappResourceGroup', 'jksmoke-webapp-');
+normalize('webappPlan', 'plan-');
+normalize('webappName', 'webapp-');
+
+# Options for Azure WebApp (Win)
+normalize('webappwinResourceGroup', 'jksmoke-webappwin-');
+normalize('webappwinPlan', 'planwin-');
+normalize('webappwinName', 'webappwin-');
+
+# Options for Azure Function
+normalize('funcResourceGroup', 'jksmoke-func-');
+normalize('funcStorageAccount', 'funcstorage');
+normalize('funcName', 'func-');
+
+# Options for VM Agents
+normalize('vmResourceGroup', 'jksmoke-vm-');
 
 if (not $options{targetDir}) {
     $options{targetDir} = File::Spec->catfile(abs_path("$Bin/.."), ".target");
@@ -96,8 +152,12 @@ throw_if_empty('Azure tenant ID', $options{tenantId});
 throw_if_empty('VM admin user', $options{adminUser});
 throw_if_empty('Jenkins image', $options{image});
 
+if (length($options{acrName}) < 5) {
+    die "ACR name must have length greater than 5: $options{acrName}";
+}
+
 @{$options{nsgAllowHost}} = split(/,/, join(',', @{$options{nsgAllowHost}}));
-@{$options{skipProcessing}} = split(/,/, join(',', @{$options{skipProcessing}}));
+@{$options{skipExt}} = split(/,/, join(',', @{$options{skipExt}}));
 
 if (not checked_output(qw(docker images -q), $options{image})) {
     die "Image '$options{image}' was not found.";
@@ -141,16 +201,121 @@ if ($generated_key) {
 }
 checked_run(qw(az account set --subscription), $options{subscriptionId});
 
-if (!$options{'resource-group'}) {
-    if (not exists $options{clean}) {
-        $options{clean} = 1;
-    }
-    $options{'resource-group'} = 'jenkins-smoke-' . Helpers::random_string();
-    $options{'location'} ||= 'Southeast Asia';
+# Prepare ACS
+ensure_resource_group($options{acsResourceGroup}, $options{location});
+ensure_acs($options{acsResourceGroup}, $options{acsK8sName});
+$options{'k8sMasterHost'} = checked_output(qw(az acs show --query masterProfile.fqdn --output tsv -g), $options{acsResourceGroup}, '-n', $options{acsK8sName});
+throw_if_empty('K8s master host', $options{'k8sMasterHost'});
+add_nsg_rule($options{acsResourceGroup}, @{$options{nsgAllowHost}});
 
-    checked_run(qw(az group create -n), $options{'resource-group'}, '-l', $options{location});
-} else {
-    $options{'location'} = checked_output(qw(az group show --query location --output tsv -n), $options{'resource-group'});
+# Prepare ACR
+ensure_resource_group($options{acrResourceGroup}, $options{location});
+ensure_acr($options{acrResourceGroup}, $options{acrName});
+$options{acrHost} = checked_output(qw(az acr show --query loginServer --output tsv --resource-group), $options{acrResourceGroup}, '--name', $options{acrName});
+$options{acrPassword} = checked_output(qw(az acr credential show --query passwords[0].value --output tsv --name), $options{acrName});
+{
+    local $main::verbose;
+    checked_run(qw(docker login -u), $options{acrName}, '-p', $options{acrPassword}, $options{acrHost});
+}
+$options{acrPrivateImageName} = $options{acrHost} . '/nginx-private';
+checked_run(qw(docker pull nginx));
+checked_run(qw(docker tag nginx), $options{acrPrivateImageName});
+checked_run(qw(docker push), $options{acrPrivateImageName});
+
+# Prepare WebApp
+ensure_resource_group($options{webappResourceGroup}, $options{location});
+ensure_webapp($options{webappResourceGroup}, $options{webappPlan}, $options{webappName}, 'linux');
+
+ensure_resource_group($options{webappwinResourceGroup}, $options{location});
+ensure_webapp($options{webappwinResourceGroup}, $options{webappwinPlan}, $options{webappwinName});
+
+# Prepare Function
+ensure_resource_group($options{funcResourceGroup}, $options{location});
+ensure_function($options{funcResourceGroup}, $options{funcStorageAccount}, $options{funcName});
+
+our @created_resource_groups;
+sub ensure_resource_group {
+    my ($name, $location) = @_;
+
+    my $exists = checked_output(qw(az group exists --name), $name);
+    if ($exists eq 'false') {
+        checked_run(qw(az group create --name), $name, '--location', $location);
+        push @created_resource_groups, $name;
+    }
+}
+
+sub ensure_acs {
+    my ($resource_group, $k8s_name) = @_;
+
+    my $info = checked_output(qw(az acs show --resource-group), $resource_group, '--name', $k8s_name);
+    if ($info =~ /^\s*$/) {
+        process_file("$Bin/../conf/acs.parameters.json", File::Spec->catfile($options{targetDir}, 'conf'), \%options);
+        checked_run(qw(az group deployment create --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-acs-kubernetes/azuredeploy.json),
+            '--resource-group', $resource_group, '--parameters', '@' . File::Spec->catfile($options{targetDir}, "conf/acs.parameters.json"));
+
+        # CLI doesn't support creation with existing service principal
+        #checked_run(qw(az acs create --orchestrator-type kubernetes --agent-count 1 --resource-group), $options{'resource-group'}, '--name', $options{k8sName}, '--ssh-key-value', $options{publicKeyFile});
+    }
+}
+
+sub ensure_acr {
+    my ($resource_group, $acr_name) = @_;
+
+    my $info = checked_output(qw(az acr show --resource-group), $resource_group, '--name', $acr_name);
+    if ($info =~ /^\s*$/) {
+        checked_run(qw(az acr create --sku Basic --admin-enabled true),
+            '--resource-group', $resource_group, '--name', $acr_name);
+    }
+}
+
+sub ensure_webapp {
+    my ($resource_group, $plan, $webapp, $is_linux) = @_;
+
+    my $plan_info = checked_output(qw(az appservice plan show --resource-group), $resource_group, '--name', $plan);
+    if ($plan_info =~ /^\s*$/) {
+        my @command_line = (qw(az appservice plan create --sku S1 --resource-group), $resource_group, '--name', $plan);
+        if ($is_linux) {
+            push @command_line, '--is-linux';
+        }
+        checked_run(@command_line);
+    }
+
+    # there's some bug with 'webapp show', we cannot use it to check the existence
+    #my $webapp_missing = run_shell(qw(az webapp show --resource-group), $resource_group, '--name', $webapp);
+    my $webapp_list = checked_output(qw(az webapp list --query [].name --output tsv --resource-group), $resource_group);
+    if ($webapp_list !~ /^\Q$webapp\E$/sm) {
+        my @command_line = (qw(az webapp create),
+            '--resource-group', $resource_group,
+            '--name', $webapp,
+            '--plan', $plan);
+        if ($is_linux) {
+            push @command_line, '--deployment-container-image-name', 'nginx';
+        } else {
+            push @command_line, '--runtime', 'node|6.10';
+        }
+        checked_run(@command_line);
+    }
+}
+
+sub ensure_function {
+    my ($resource_group, $account, $func) = @_;
+
+    my $location = checked_output(qw(az group show --query location --output tsv --name), $resource_group);
+
+    my $acc_info = checked_output(qw(az storage account show --resource-group), $resource_group, '--name', $account);
+    if ($acc_info =~ /^\s*$/) {
+        checked_run(qw(az storage account create --sku Standard_LRS),
+            '--resource-group', $resource_group, '--name', $account, '--location', $location);
+    }
+
+    my $func_missing = run_shell(qw(az functionapp show --resource-group), $resource_group, '--name', $func);
+    if ($func_missing) {
+        checked_run(qw(az functionapp create --deployment-source-url https://github.com/Azure-Samples/functions-quickstart),
+            '--resource-group', $resource_group,
+            '--name', $func,
+            '--storage-account', $account,
+            '--consumption-plan-location', $location);
+    }
 }
 
 sub add_nsg_rule {
@@ -173,8 +338,15 @@ sub add_nsg_rule {
                 log_info("Resolved $host to ip address $ip");
                 $host = $ip;
             }
-            my $name = 'allow_' . join('_', $host =~ /([\w\d]+)/g) . '_' . Helpers::random_string();
+            my $name = 'allow_' . join('_', $host =~ /([\w\d]+)/g) . '_22';
             for my $nsg (@master_nsgs) {
+                my $rule_exists = checked_output(qw(az network nsg rule show),
+                    '--resource-group', $resource_group,
+                    '--nsg-name', $nsg,
+                    '--name', $name);
+                if ($rule_exists !~ /^\s*$/) {
+                    next;
+                }
                 # chose a fixed priority 2017. it is not ideal but should be enough for the smoke test
                 checked_run(qw(az network nsg rule create --priority 2017 --destination-port-ranges 22),
                     '--resource-group', $resource_group,
@@ -186,41 +358,7 @@ sub add_nsg_rule {
     }
 }
 
-if (!$options{k8sName}) {
-    $options{k8sDns} = 'a'. Helpers::random_string(10);
-    $options{k8sName} = 'containerservice-' . $options{'resource-group'};
-    process_file("$Bin/../conf/acs.parameters.json", File::Spec->catfile($options{targetDir}, 'conf'), \%options);
-    checked_run(qw(az group deployment create --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-acs-kubernetes/azuredeploy.json),
-        '--resource-group', $options{'resource-group'}, '--parameters', '@' . File::Spec->catfile($options{targetDir}, "conf/acs.parameters.json"));
-
-    add_nsg_rule($options{'resource-group'}, @{$options{nsgAllowHost}});
-    # CLI doesn't support creation with existing service principal
-    #checked_run(qw(az acs create --orchestrator-type kubernetes --agent-count 1 --resource-group), $options{'resource-group'}, '--name', $options{k8sName}, '--ssh-key-value', $options{publicKeyFile});
-} else {
-    $options{k8sDns} = $options{k8sName};
-}
-
-$options{'k8s-master-host'} = checked_output(qw(az acs show --query masterProfile.fqdn --output tsv -g), $options{'resource-group'}, '-n', $options{k8sName});
-throw_if_empty('K8s master host', $options{'k8s-master-host'});
-
-if (!$options{acrName}) {
-    $options{acrName} = 'acr' . Helpers::random_string();
-    checked_run(qw(az acr create --sku Basic --admin-enabled true --resource-group), $options{'resource-group'}, '--name', $options{acrName});
-}
-
-$options{acrHost} = checked_output(qw(az acr show --query loginServer --output tsv --resource-group), $options{'resource-group'}, '--name', $options{acrName});
-$options{acrPassword} = checked_output(qw(az acr credential show --query passwords[0].value --output tsv --name), $options{acrName});
-
-{
-    local $main::verbose;
-    checked_run(qw(docker login -u), $options{acrName}, '-p', $options{acrPassword}, $options{acrHost});
-}
-$options{acrPrivateImageName} = $options{acrHost} . '/nginx-private';
-checked_run(qw(docker pull nginx));
-checked_run(qw(docker tag nginx), $options{acrPrivateImageName});
-checked_run(qw(docker push), $options{acrPrivateImageName});
-
-my %skip_processing = map { ($_, 1) } @{$options{skipProcessing}};
+my %skip_ext = map { ($_, 1) } @{$options{skipExt}};
 
 find(sub {
     if (-d $_) {
@@ -228,7 +366,7 @@ find(sub {
     }
     my $file = abs_path($File::Find::name);
     my ($extension) = /\.([^\.]+)$/;
-    if (defined $extension and exists $skip_processing{$extension}) {
+    if (defined $extension and exists $skip_ext{$extension}) {
         return;
     }
     if ($file =~ /^\Q$options{targetDir}\E/ || $file =~ qr{/\.target\b}
@@ -353,8 +491,9 @@ exit $final_result;
 sub END {
     return if not $options{clean};
 
-    if ($options{'resource-group'}) {
-        run_shell(qw(az group delete -y --no-wait -n), $options{'resource-group'});
+    for my $group (@created_resource_groups) {
+        log_info("Clean up resource group $group");
+        run_shell(qw(az group delete -y --no-wait -n), $group);
     }
 }
 

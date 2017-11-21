@@ -27,7 +27,7 @@ class Helper {
 
 class Config {
     static String location = '$$location$$'
-    static String resourceGroup = '$$resource-group$$'
+    static String vmResourceGroup = '$$vmResourceGroup$$'
     static Map<String, String> vmCredential = [
             id: 'vm-credential',
             username: '$$adminUser$$',
@@ -159,7 +159,7 @@ static void setupVmCloud(String azureCredentialId) {
             "3",
             "1200",
             "new",
-            Config.resourceGroup,
+            Config.vmResourceGroup,
             "",
             [template]
     )

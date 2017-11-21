@@ -30,7 +30,7 @@
       <context>
         <credentialsType>SSH</credentialsType>
         <ssh>
-          <sshServer>$$k8s-master-host$$</sshServer>
+          <sshServer>$$k8sMasterHost$$</sshServer>
           <sshCredentialsId>ssh-credential</sshCredentialsId>
         </ssh>
         <configs>$$testDataRoot$$/kubernetes/k8s-public.yml</configs>
@@ -42,4 +42,3 @@
   <publishers/>
   <buildWrappers/>
 </project>
-

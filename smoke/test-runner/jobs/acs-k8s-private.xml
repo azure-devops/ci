@@ -29,8 +29,8 @@
         <com.microsoft.jenkins.acs.ACSDeploymentBuilder plugin="azure-acs@0.1.4">
             <context>
                 <azureCredentialsId>sp</azureCredentialsId>
-                <resourceGroupName>$$resource-group$$</resourceGroupName>
-                <containerService>$$k8sName$$ | Kubernetes</containerService>
+                <resourceGroupName>$$acsResourceGroup$$</resourceGroupName>
+                <containerService>$$acsK8sName$$ | Kubernetes</containerService>
                 <sshCredentialsId>ssh-credential</sshCredentialsId>
                 <configFilePaths>$$testDataRoot$$/acs/acs-k8s-private.yml</configFilePaths>
                 <enableConfigSubstitution>true</enableConfigSubstitution>

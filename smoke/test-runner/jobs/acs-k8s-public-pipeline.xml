@@ -17,8 +17,8 @@ node {
 
     stage('Deploy') {
         acsDeploy azureCredentialsId: 'sp',
-            resourceGroupName: '$$resource-group$$',
-            containerService: '$$k8sName$$ | Kubernetes',
+            resourceGroupName: '$$acsResourceGroup$$',
+            containerService: '$$acsK8sName$$ | Kubernetes',
             sshCredentialsId: 'ssh-credential',
             configFilePaths: '$$testDataRoot$$/acs/acs-k8s-public-pipeline.yml'
     }

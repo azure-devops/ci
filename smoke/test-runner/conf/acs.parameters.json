@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "dnsNamePrefix": {
-      "value": "$$k8sDns$$"
+      "value": "$$acsK8sDns$$"
     },
     "adminUsername": {
       "value": "$$adminUser$$"
