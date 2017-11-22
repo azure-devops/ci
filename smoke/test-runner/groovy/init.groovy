@@ -115,7 +115,7 @@ static void setupVmCloud(String azureCredentialId) {
     AzureVMAgentTemplate template = new AzureVMAgentTemplate(
             "vm-cloud-template",
             "VM cloud for Jenkins plugins smoke test",
-            "vm linux",
+            "linux docker maven git",
             Config.location,
             "Standard_A0",
             "new",
@@ -128,7 +128,7 @@ static void setupVmCloud(String azureCredentialId) {
             "Ubuntu 16.04 LTS",
             true,
             true,
-            false,
+            true,
             "Linux",
             "basic",
             false,
@@ -158,9 +158,9 @@ static void setupVmCloud(String azureCredentialId) {
             azureCredentialId,
             "3",
             "1200",
-            "new",
-            Config.vmResourceGroup,
+            "existing",
             "",
+            Config.vmResourceGroup,
             [template]
     )
 

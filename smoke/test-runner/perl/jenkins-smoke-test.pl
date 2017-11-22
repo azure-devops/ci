@@ -233,6 +233,9 @@ ensure_webapp($options{webappwinResourceGroup}, $options{webappwinPlan}, $option
 ensure_resource_group($options{funcResourceGroup}, $options{location});
 ensure_function($options{funcResourceGroup}, $options{funcStorageAccount}, $options{funcName});
 
+# VM Agents
+ensure_resource_group($options{vmResourceGroup});
+
 our @created_resource_groups;
 sub ensure_resource_group {
     my ($name, $location) = @_;
