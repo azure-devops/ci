@@ -93,9 +93,9 @@ sub normalize {
 }
 
 # Options for ACS resources
-normalize('acsResourceGroup', 'jksmoke-k8s-');
+normalize('acsResourceGroup', 'jksmoke-acs-');
 # TODO allow specifying the K8s name
-normalize('acsK8sName', 'containerservice-jksmoke-k8s-');
+normalize('acsK8sName', 'containerservice-jksmoke-acs-');
 normalize('acsK8sDns', 'acsk8s');
 
 # Options for ACR
@@ -532,30 +532,58 @@ jenkins-smoke-test.pl [options]
    --image|-i                   The Jenkins image used to run the tests
 
  <Optional>
+   --location                   The resource location for all the resources, default "Southeast Asia"
    --adminUser                  The user name to login to ACS cluster master or other VM
    --publicKeyFile              The public key file used to create ACS cluster or other VM resources
    --privateKeyFile             The private key file used to authenticate with ACS cluster master or other VM resources
 
-   --resource-group             The resource group that contains all the related resources
-                                It will be generated and created if not provided
-   --location                   The resource location for all the resources, default "Southeast Asia"
-   --k8sName                    The ACS resource name with Kubernetes orchestrator
-   --acrName                    The Azure Container Registry resource name
+   --suffix                     The name suffix for all the related resources and groups. This will be
+                                used to generate the default value for all the followed resource group names
+                                and the resource names. If not specified, a random one will be generated.
+                                For each of the related resource, the script will check if it exists and
+                                provision the resource if absent.
 
-   --targetDir                  The directory to store all the geneated resources
+   <Azure Container Service>
+   --acsResourceGroup           The resource group name of the ACS clusters
+   --acsK8sName                 The name of the ACS Kubernetes cluster
+
+   <Azure Container Registry>
+   --acrResourceGroup           The resource group name of the ACR
+   --acrName                    The name of the ACR
+
+   <Azure WebApp (Linux)>
+   --webappResourceGroup        The resource group name of the WebApp on Linux
+   --webappPlan                 The name of the WebApp on Linux plan
+   --webappName                 The name of the WebApp on Linux
+
+   <Azure WebApp (Windows)>
+   --webappwinResourceGroup     The resource group name of the WebApp on Windows
+   --webappwinPlan              The name of the WebApp on Windows plan
+   --webappwinName              The name of the WebApp on Windows
+
+   <Azure Function>
+   --funcResourceGroup          The resource group of the Azure Function
+   --funcStorageAccount         The storage account of the Azure Function
+   --funcName                   The name of the Azure Function
+
+   <VM Agents>
+   --vmResourceGroup            The resource group for the VM agents provision
+
+   --targetDir                  The directory to store all the generated resources
    --artifactDir                The directory to store the build artifacts
 
    --testDataRepo               Repository URL for the test data, default "https://github.com/azure-devops/ci.git"
    --testDataBranch             Branch of the test data, default "master"
    --testDataRoot               Root directory for all the test data, default "smoke/test-data"
 
-   --skipProcessing             List of file extensions that should not be processed for the $$option$$ replacement,
+   --skipExt                    List of file extensions that should not be processed for the $$option$$ replacement,
                                 default md, jar, pl, pm.
 
    --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                 created Kubernetes master network security group
 
  <Miscellaneous>
+   --[no]clean                  Whether to delete the related resource groups at the end of the script.
    --verbose                    Turn on verbose output
    --help                       Show the help documentation
    --version                    Show the script version
