@@ -295,6 +295,18 @@ sub ensure_webapp {
         }
         checked_run(@command_line);
     }
+
+    if (not $is_linux) {
+        # create staging slot for Windows WebApp
+        my $slots = checked_output(qw(az webapp deployment slot list --query [].name --output tsv),
+            '--resource-group', $resource_group,
+            '--name', $webapp);
+        if ($slots !~ /^staging$/sm) {
+            checked_run(qw(az webapp deployment slot create --slot staging),
+                '--resource-group', $resource_group,
+                '--name', $webapp);
+        }
+    }
 }
 
 sub ensure_function {
