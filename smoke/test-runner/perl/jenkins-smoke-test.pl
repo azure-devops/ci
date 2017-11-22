@@ -19,9 +19,12 @@ use File::Copy;
 use File::Find;
 use File::Path qw(make_path remove_tree);
 use File::Spec;
+use IO::Select;
+use IPC::Open3 qw(open3);
 use Pod::Usage;
 use POSIX qw(strftime);
 use Socket;
+use Symbol;
 
 use Data::Dumper;
 
@@ -234,7 +237,7 @@ ensure_resource_group($options{funcResourceGroup}, $options{location});
 ensure_function($options{funcResourceGroup}, $options{funcStorageAccount}, $options{funcName});
 
 # VM Agents
-ensure_resource_group($options{vmResourceGroup});
+ensure_resource_group($options{vmResourceGroup}, $options{location});
 
 our @created_resource_groups;
 sub ensure_resource_group {
@@ -402,30 +405,6 @@ remove_tree($jenkins_home);
 make_path($jenkins_home);
 chmod 0777, $jenkins_home;
 
-# TODO Change to IPC::Open3
-# we do not have pseudo TTY when running in Jenkins
-# We cannot run with "docker -t" in Jenkins, as a result, the STDOUT of the main process will be buffered
-# and output when the child process termiates, rather than interleaved.
-my $jenkins_pid = fork();
-if (!$jenkins_pid) {
-    copy("$options{targetDir}/groovy/init.groovy", "$jenkins_home/init.groovy");
-    my @commands = (qw(docker run -i -p8090:8080),
-        '-v', "$jenkins_home:/var/jenkins_home",
-        '-v', "$options{targetDir}:/opt",
-        '--name', $options{dockerProcessName},
-        $options{image});
-    my $command = list2cmdline(@commands);
-    print_banner("Start Jenkins in Docker");
-    log_info($command);
-    exec { $commands[0] } @commands;
-    exit 0;
-}
-log_info("Jenkins process pid: $jenkins_pid, docker container process name: $options{dockerProcessName}");
-
-my @jobs = map { basename($_, '.xml') } glob 'jobs/*.xml';
-my %status_for_job;
-my $remaining_job = @jobs;
-
 sub read_link {
     my ($file) = @_;
     if (-l $file) {
@@ -435,47 +414,107 @@ sub read_link {
     }
 }
 
-while (1) {
+sub check_job_status {
+    my ($jobs, $status) = @_;
+
+    my $remaining = 0;
+
     print "\r\n\n";
     print_banner("Check Build Status");
-    for my $job (@jobs) {
+    for my $job (@$jobs) {
         my $job_home = File::Spec->catfile($jenkins_home, 'jobs', $job);
         if (not -e $job_home) {
             print "$job - missing\r\n";
+            ++$remaining;
             next;
         }
         my $builds_home = File::Spec->catfile($job_home, 'builds');
         if (not -e $builds_home) {
             print "$job - no build\r\n";
+            ++$remaining;
             next;
         }
         my $lastSuccessfulBuild = read_link(File::Spec->catfile($builds_home, 'lastSuccessfulBuild'));
         my $lastUnsuccessfulBuild = read_link(File::Spec->catfile($builds_home, 'lastUnsuccessfulBuild'));
         if ($lastUnsuccessfulBuild > 0) {
             print "$job - failed\r\n";
-            if (not exists $status_for_job{$job}) {
-                --$remaining_job;
+            if (not exists $status->{$job}) {
+                copy(File::Spec->catfile($builds_home, $lastUnsuccessfulBuild, 'log'), File::Spec->catfile($options{artifactsDir}, "$job.log"));
             }
-            $status_for_job{$job} = 'failed';
-            copy(File::Spec->catfile($builds_home, $lastUnsuccessfulBuild, 'log'), File::Spec->catfile($options{artifactsDir}, "$job.log"));
+            $status->{$job} = 'failed';
         } elsif ($lastSuccessfulBuild > 0) {
             print "$job - successful\r\n";
-            if (not exists $status_for_job{$job}) {
-                --$remaining_job;
+            if (not exists $status->{$job}) {
+                copy(File::Spec->catfile($builds_home, $lastSuccessfulBuild, 'log'), File::Spec->catfile($options{artifactsDir}, "$job.log"));
             }
-            $status_for_job{$job} = 'successful';
-            copy(File::Spec->catfile($builds_home, $lastSuccessfulBuild, 'log'), File::Spec->catfile($options{artifactsDir}, "$job.log"));
+            $status->{$job} = 'successful';
         } else {
             print "$job - building\r\n";
+            ++$remaining;
         }
     }
     print "\r\n";
 
-    if ($remaining_job <= 0) {
-        last;
+    $remaining;
+}
+
+copy("$options{targetDir}/groovy/init.groovy", "$jenkins_home/init.groovy");
+my @commands = (qw(docker run -i -p8090:8080),
+    '-v', "$jenkins_home:/var/jenkins_home",
+    '-v', "$options{targetDir}:/opt",
+    '--name', $options{dockerProcessName},
+    $options{image});
+my $command = list2cmdline(@commands);
+print_banner("Start Jenkins in Docker");
+log_info($command);
+
+my ($in, $out, $err);
+$err = gensym();
+my $jenkins_pid = open3($in, $out, $err, @commands);
+close($in);
+log_info("Jenkins process pid: $jenkins_pid, docker container process name: $options{dockerProcessName}");
+
+my $sel = IO::Select->new();
+$sel->add($out);
+$sel->add($err);
+
+my ($buffer, $out_buffer, $err_buffer);
+
+my @jobs = map { basename($_, '.xml') } glob 'jobs/*.xml';
+my %status_for_job;
+my $last_checked_time = time();
+
+while (1) {
+    my @ready = $sel->can_read(5);
+    for my $handle (@ready) {
+        my $bytes = sysread($handle, $buffer, 4096);
+        if ($bytes > 0) {
+           if (fileno($handle) == fileno($out)) {
+                print $buffer;
+            } else {
+                print STDERR $buffer;
+            }
+        } elsif ($bytes == 0) {
+            $sel->remove($handle);
+        } else {
+            log_error("Error reading output of the Docker Jenkins process.");
+            $sel->remove($handle);
+        }
     }
 
-    sleep 20;
+    my $current_time = time();
+    if ($current_time - $last_checked_time > 20) {
+        my $remaining = check_job_status(\@jobs, \%status_for_job);
+        $last_checked_time = $current_time;
+
+        if ($remaining <= 0) {
+            last;
+        }
+    }
+
+    if ($sel->count() <= 0) {
+        last;
+    }
 }
 
 log_info("Send SIGINT to the Jenkins docker container process with pid $jenkins_pid...");
