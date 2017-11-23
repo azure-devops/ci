@@ -86,6 +86,7 @@ GetOptions(\%options,
     'artifactsDir|artifacts-dir=s',
     'nsgAllowHost|nsg-allow-host=s@',
     'skipExt|skip-ext=s@',
+    'exposePort|expose-port=i',
     'timeout=i',
     'clean!',
     'verbose!',
@@ -100,6 +101,10 @@ sub check_timeout {
     if (time() - $task_start_time > $options{timeout}) {
         die "Timeout ($options{timeout}s)";
     }
+}
+
+if (exists $options{exposePort} and $options{exposePort} <= 0) {
+    die "Argument exposePort=$options{exposePort} is invalid\n";
 }
 
 # Options for ACS resources
@@ -533,12 +538,15 @@ sub check_job_status {
 }
 
 copy("$options{targetDir}/groovy/init.groovy", "$jenkins_home/init.groovy");
-my @commands = (qw(docker run -i -p8090:8080),
+my @commands = (qw(docker run -i),
     '-v', "$jenkins_home:/var/jenkins_home",
     '-v', "$options{targetDir}:/opt",
     '-u', $uid_gid,
-    '--name', $options{dockerProcessName},
-    $options{image});
+    '--name', $options{dockerProcessName});
+if (exists $options{exposePort}) {
+    push @commands, '-p', "$options{exposePort}:8080";
+}
+push @commands, $options{image};
 my $command = list2cmdline(@commands);
 print_banner("Start Jenkins in Docker");
 log_info($command);
@@ -703,6 +711,9 @@ jenkins-smoke-test.pl [options]
 
    --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                 created Kubernetes master network security group
+
+   --exposePort                 Expose the port on the host running the script, which maps to the Jenkins service port
+                                running in the Docker container.
 
    --timeout                    Timeout for the entire task in seconds, default 3600
 

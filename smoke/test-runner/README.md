@@ -33,7 +33,7 @@
 
 ## Extra Options
 
-* To test with existing Azure resources, check the following two options:
+* To test with existing Azure resources, check the following options:
    * `--suffix`: this is the common name suffix for all the generated resources. If provided
       from command line, the resource name will be constructed with this suffix. And if
       the resource already exists, it will be reused. This will be helpful to run the tests
@@ -41,6 +41,8 @@
    * `--noclean`: by default, the script deletes all the resource groups created during the
       tests, if this option is specified, the resources will be left untouched, and can be
       reused afterwards, with the same `--suffix` option provided.
+   * `--publicKeyFile`: this should be the public key used to provision the existing resources.
+   * `--privateKeyFile`: this should be the private key that can be authenticate with the existing resources.
 
    If you already has all the resource provisioned outside of this script, you can specify
    the information of the resources from command line, again, the script will reuse the
@@ -112,6 +114,11 @@ Usage:
 
        --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                     created Kubernetes master network security group
+
+       --exposePort                 Expose the port on the host running the script, which maps to the Jenkins service port
+                                    running in the Docker container.
+
+       --timeout                    Timeout for the entire task in seconds, default 3600
 
      <Miscellaneous>
        --[no]clean                  Whether to delete the related resource groups at the end of the script.
