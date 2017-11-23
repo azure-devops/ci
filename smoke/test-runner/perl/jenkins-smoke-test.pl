@@ -561,11 +561,10 @@ while (1) {
     for my $handle (@ready) {
         my $bytes = sysread($handle, $buffer, 4096);
         if ($bytes > 0) {
-           if (fileno($handle) == fileno($out)) {
-                print $buffer;
-            } else {
-                print STDERR $buffer;
-            }
+            # redirect output to STDOUT, regardless whether they come from STDOUT or STDERR of the child process
+            # Jenkins will hold the STDOUT messages if it sees the STDERR messages, as a result, 
+            # our logging to STDOUT may not be displayed in the console page until after a period of time.
+            print $buffer;
         } elsif ($bytes == 0) {
             $sel->remove($handle);
         } else {
@@ -619,8 +618,10 @@ sub END {
     if (defined $jenkins_home && exists $options{artifactsDir} && -d $options{artifactsDir}) {
         log_info("Copy out the slave logs...");
         for my $slave_log (glob(File::Spec->catfile($jenkins_home, 'logs/slaves/*/slave.log'))) {
-            my ($name) = $slave_log =~ qr{([^/]+)/slave\.log$};
-            copy($slave_log, File::Spec->catfile($options{artifactsDir}, "$name.log"));
+            log_info("Copy $slave_log...");
+            if ($slave_log =~ qr{([^/]+)/slave\.log$}) {
+                copy($slave_log, File::Spec->catfile($options{artifactsDir}, "$1.log"));
+            }
         }
     }
 
