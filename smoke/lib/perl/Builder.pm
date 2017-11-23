@@ -15,6 +15,7 @@ package Builder;
 
 use base qw(Exporter);
 use Helpers qw(:log :shell throw_if_empty);
+use File::Glob qw(:bsd_glob);
 use File::Path qw(make_path remove_tree);
 
 our @EXPORT_OK = qw(build);
@@ -41,7 +42,7 @@ sub build {
     checked_run(qw(mvn clean package -DskipTests));
 
     my $pattern = File::Spec->catfile($dir, 'target/*.hpi');
-    my @results = glob $pattern;
+    my @results = bsd_glob($pattern);
     if (@results == 1) {
         log_info("Built $id at $results[0]");
         return $results[0];
