@@ -50,13 +50,6 @@
 * To add some hosts to the K8s network security group to allow them to access the master host via SSH:
    * `--nsgAllowHost` - comma separated hosts that needs to be added the NSG allow list
 
-* To use different git repository for the test configs which will be loaded by the Jenkins jobs,
-   specify the test configs repository details as followed. This may help if the configs are still under
-   development.
-   * `--testDataRepo` - Repository URL for the test data, default `https://github.com/azure-devops/ci.git`
-   * `--testDataBranch` - Branch of the test data, default `master`
-   * `--testDataRoot` - Root directory for all the test data, default `smoke/test-data`
-
 ## Full Command Line Options
 
 ```
@@ -114,10 +107,6 @@ Usage:
        --targetDir                  The directory to store all the generated resources
        --artifactDir                The directory to store the build artifacts
 
-       --testDataRepo               Repository URL for the test data, default "https://github.com/azure-devops/ci.git"
-       --testDataBranch             Branch of the test data, default "master"
-       --testDataRoot               Root directory for all the test data, default "smoke/test-data"
-
        --skipExt                    List of file extensions that should not be processed for the $$option$$ replacement,
                                     default md, jar, pl, pm.
 
@@ -139,10 +128,12 @@ To write test cases for the Azure Jenkins plugins, add configuration files in:
    `$JENKINS_HOME/jobs/<job-name>/config.xml`. Rename the config file to `<job-name>.xml`. They
    will be processed before the Jenkins process is started, so **the `$$<option>$$` segment
    will be replaced with the corresponding option from the start up Perl script**.
-* `smoke/test-data/`: The test data root directory. This defines the configurations or other
-   data that is required or to be deployed to the Azure infrastructure. Examples are Kubernetes
-   configuration files for ACS / Kubernetes deployment tests, WebApp configurations to be deployed
-   in WebApp deployment tests, etc. **They will be loaded during the Jenkins build, so it should
-   be considered as static.** If you need to replace any of the contents there, you need to do it
-   in the standard Jenkins way, e.g., add another extra build step to process the file, or use
-   environment variable replace functions if the plugin provides.
+*  If the job depends on some external data source, for example, the web application source code,
+   the Kubernetes deployment YAML files, or any files that's needed during the job run, you may:
+
+   * Fetch the source from external SCM
+   * Add an `Execute Shell` build step to generate the source files (or the `sh` command in pipeline).
+      This is preferred as it does not have external source code dependency.
+
+   As long as it is in the job XML definition, it will be processed by the `$$<option>$$` replacement
+   and you can generate the job definition dynamically.

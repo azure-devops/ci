@@ -11,12 +11,33 @@
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.41">
     <script><![CDATA[
 node {
-    stage('SCM') {
-        git branch: '$$testDataBranch$$', url: '$$testDataRepo$$'
+    stage('Prepare') {
+        sh '''
+mkdir -p kubernetes
+cat >kubernetes/k8s-public-pipeline.yml <<'EOF'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: k8s-public-pipeline-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: k8s-public-pipeline
+    spec:
+      containers:
+      - name: k8s-public-pipeline-container
+        image: nginx
+        ports:
+        - containerPort: 80
+
+EOF
+'''
     }
 
     stage('Deploy') {
-        kubernetesDeploy configs: '$$testDataRoot$$/kubernetes/k8s-public-pipeline.yml',
+        kubernetesDeploy configs: 'kubernetes/k8s-public-pipeline.yml',
             credentialsType: 'SSH',
             ssh: [sshCredentialsId: 'ssh-credential', sshServer: '$$k8sMasterHost$$']
     }

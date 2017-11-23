@@ -11,8 +11,28 @@
     <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.41">
         <script><![CDATA[
 node {
-    stage('SCM') {
-        git branch: '$$testDataBranch$$', url: '$$testDataRepo$$'
+    stage('Prepare') {
+        sh '''
+mkdir -p acs/kubernetes
+cat >acs/kubernetes/acs-k8s-public-pipeline.yml <<'EOF'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: acs-k8s-public-pipeline-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acs-k8s-public-pipeline
+    spec:
+      containers:
+      - name: acs-k8s-public-pipeline-container
+        image: nginx
+        ports:
+        - containerPort: 80
+EOF
+'''
     }
 
     stage('Deploy') {
@@ -20,7 +40,7 @@ node {
             resourceGroupName: '$$acsResourceGroup$$',
             containerService: '$$acsK8sName$$ | Kubernetes',
             sshCredentialsId: 'ssh-credential',
-            configFilePaths: '$$testDataRoot$$/acs/acs-k8s-public-pipeline.yml'
+            configFilePaths: 'acs/kubernetes/acs-k8s-public-pipeline.yml'
     }
 }
 ]]></script>

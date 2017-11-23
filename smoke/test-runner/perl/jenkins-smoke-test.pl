@@ -38,9 +38,6 @@ our %options = (
     adminUser => 'azureuser',
     suffix => strftime("%m%d", localtime()) . Helpers::random_string(4),
     location => 'Southeast Asia',
-    testDataRepo => 'https://github.com/azure-devops/ci.git',
-    testDataBranch => 'master',
-    testDataRoot => 'smoke/test-data',
     nsgAllowHost => [],
     skipExt => [qw(md jar pl pm)],
     clean => 1,
@@ -81,9 +78,6 @@ GetOptions(\%options,
     'vmResourceGroup|vm-resource-group=s',
     'targetDir|target-dir=s',
     'artifactsDir|artifacts-dir=s',
-    'testDataRepo|test-data-repo=s',
-    'testDataRoot|test-data-root=s',
-    'testDataBranch|test-data-branch=s',
     'nsgAllowHost|nsg-allow-host=s@',
     'skipExt|skip-ext=s@',
     'clean!',
@@ -139,8 +133,6 @@ if (not $options{artifactsDir}) {
     print Data::Dumper->Dump([\%options], ["options"]);
     $options{clientSecret} = $secret;
 }
-
-$options{testDataRoot} =~ s/[\\\/]+$//;
 
 our $verbose = $options{verbose};
 
@@ -610,10 +602,6 @@ jenkins-smoke-test.pl [options]
 
    --targetDir                  The directory to store all the generated resources
    --artifactDir                The directory to store the build artifacts
-
-   --testDataRepo               Repository URL for the test data, default "https://github.com/azure-devops/ci.git"
-   --testDataBranch             Branch of the test data, default "master"
-   --testDataRoot               Root directory for all the test data, default "smoke/test-data"
 
    --skipExt                    List of file extensions that should not be processed for the $$option$$ replacement,
                                 default md, jar, pl, pm.

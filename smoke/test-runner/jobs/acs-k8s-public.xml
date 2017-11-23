@@ -8,22 +8,7 @@ Licensed under the MIT License. See LICENSE in the project root for license info
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties/>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.6.4">
-    <configVersion>2</configVersion>
-    <userRemoteConfigs>
-      <hudson.plugins.git.UserRemoteConfig>
-        <url>$$testDataRepo$$</url>
-      </hudson.plugins.git.UserRemoteConfig>
-    </userRemoteConfigs>
-    <branches>
-      <hudson.plugins.git.BranchSpec>
-        <name>*/$$testDataBranch$$</name>
-      </hudson.plugins.git.BranchSpec>
-    </branches>
-    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
-    <submoduleCfg class="list"/>
-    <extensions/>
-  </scm>
+  <scm class="hudson.scm.NullSCM"/>
   <canRoam>true</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -31,13 +16,53 @@ Licensed under the MIT License. See LICENSE in the project root for license info
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
+    <hudson.tasks.Shell>
+      <command><![CDATA[
+mkdir -p acs/kubernetes
+cat >acs/kubernetes/acs-k8s-public.yml <<'EOF'
+---
+apiVersion: v1
+kind: List
+items:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: acs-k8s-public-service
+    labels:
+      app: acs-k8s-public
+  spec:
+    type: LoadBalancer
+    selector:
+      app: acs-k8s-public
+    ports:
+      - port: 80
+        targetPort: 80
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    name: acs-k8s-public-deployment
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: acs-k8s-public
+      spec:
+        containers:
+        - name: acs-k8s-public-container
+          image: nginx
+          ports:
+          - containerPort: 80
+EOF
+]]></command>
+    </hudson.tasks.Shell>
     <com.microsoft.jenkins.acs.ACSDeploymentBuilder plugin="azure-acs@0.1.4">
       <context>
         <azureCredentialsId>sp</azureCredentialsId>
         <resourceGroupName>$$acsResourceGroup$$</resourceGroupName>
         <containerService>$$acsK8sName$$ | Kubernetes</containerService>
         <sshCredentialsId>ssh-credential</sshCredentialsId>
-        <configFilePaths>$$testDataRoot$$/acs/acs-k8s-public.yml</configFilePaths>
+        <configFilePaths>acs/kubernetes/acs-k8s-public.yml</configFilePaths>
         <enableConfigSubstitution>false</enableConfigSubstitution>
         <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
         <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>

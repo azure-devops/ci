@@ -117,7 +117,7 @@ static void setupVmCloud(String azureCredentialId) {
             "VM cloud for Jenkins plugins smoke test",
             "linux docker maven git",
             Config.location,
-            "Standard_A0",
+            "Standard_D2s_v3",
             "new",
             "Standard_LRS",
             storageAccount,
