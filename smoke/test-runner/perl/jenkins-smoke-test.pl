@@ -615,6 +615,15 @@ log_info("\r\n\r\nArtifacts copied to $options{artifactsDir}");
 exit $final_result;
 
 sub END {
+    log_info("Teardown...");
+    if (defined $jenkins_home && exists $options{artifactsDir} && -d $options{artifactsDir}) {
+        log_info("Copy out the slave logs...");
+        for my $slave_log (glob(File::Spec->catfile($jenkins_home, 'logs/slaves/*/slave.log'))) {
+            my ($name) = $slave_log =~ qr{([^/]+)/slave\.log$};
+            copy($slave_log, File::Spec->catfile($options{artifactsDir}, "$name.log"));
+        }
+    }
+
     return if not $options{clean};
 
     for my $group (@created_resource_groups) {
