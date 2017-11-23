@@ -17,6 +17,7 @@ use Cwd qw(abs_path);
 use File::Basename;
 use File::Copy;
 use File::Find;
+use File::Glob qw(:bsd_glob);
 use File::Path qw(make_path remove_tree);
 use File::Spec;
 use IO::Select;
@@ -138,7 +139,10 @@ if (not $options{targetDir}) {
 
 if (not $options{artifactsDir}) {
     $options{artifactsDir} = File::Spec->catfile(abs_path("$Bin/.."), ".artifacts");
+    remove_tree($options{artifactsDir});
 }
+
+my $uid_gid = join(':', (getpwuid($<))[2, 3]);
 
 {
     # dump the options, hiding the service principal secret
@@ -532,6 +536,7 @@ copy("$options{targetDir}/groovy/init.groovy", "$jenkins_home/init.groovy");
 my @commands = (qw(docker run -i -p8090:8080),
     '-v', "$jenkins_home:/var/jenkins_home",
     '-v', "$options{targetDir}:/opt",
+    '-u', $uid_gid,
     '--name', $options{dockerProcessName},
     $options{image});
 my $command = list2cmdline(@commands);
@@ -550,7 +555,7 @@ $sel->add($err);
 
 my ($buffer, $out_buffer, $err_buffer);
 
-my @jobs = map { basename($_, '.xml') } glob 'jobs/*.xml';
+my @jobs = map { basename($_, '.xml') } bsd_glob 'jobs/*.xml';
 my %status_for_job;
 my $last_checked_time = time();
 
@@ -617,7 +622,7 @@ sub END {
     log_info("Teardown...");
     if (defined $jenkins_home && exists $options{artifactsDir} && -d $options{artifactsDir}) {
         log_info("Copy out the slave logs...");
-        for my $slave_log (glob(File::Spec->catfile($jenkins_home, 'logs/slaves/*/slave.log'))) {
+        for my $slave_log (bsd_glob(File::Spec->catfile($jenkins_home, 'logs/slaves/*/slave.log'))) {
             log_info("Copy $slave_log...");
             if ($slave_log =~ qr{([^/]+)/slave\.log$}) {
                 copy($slave_log, File::Spec->catfile($options{artifactsDir}, "$1.log"));
