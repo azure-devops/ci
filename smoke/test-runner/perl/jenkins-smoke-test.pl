@@ -23,12 +23,15 @@ use IO::Select;
 use IPC::Open3 qw(open3);
 use Pod::Usage;
 use POSIX qw(strftime);
+use sigtrap qw(die normal-signals);
 use Socket;
 use Symbol;
 
 use Data::Dumper;
 
 our $VERSION = 0.1.0;
+
+my $task_start_time = time();
 
 our %options = (
     subscriptionId => $ENV{AZURE_SUBSCRIPTION_ID},
@@ -40,6 +43,7 @@ our %options = (
     location => 'Southeast Asia',
     nsgAllowHost => [],
     skipExt => [qw(md jar pl pm)],
+    timeout => 3600,
     clean => 1,
     verbose => 1,
 );
@@ -80,6 +84,7 @@ GetOptions(\%options,
     'artifactsDir|artifacts-dir=s',
     'nsgAllowHost|nsg-allow-host=s@',
     'skipExt|skip-ext=s@',
+    'timeout=i',
     'clean!',
     'verbose!',
 ) or pod2usage(2);
@@ -87,6 +92,12 @@ GetOptions(\%options,
 sub normalize {
     my ($key, $prefix) = @_;
     $options{$key} ||= $prefix . $options{suffix};
+}
+
+sub check_timeout {
+    if (time() - $task_start_time > $options{timeout}) {
+        die "Timeout ($options{timeout}s)";
+    }
 }
 
 # Options for ACS resources
@@ -196,12 +207,16 @@ if ($generated_key) {
 }
 checked_run(qw(az account set --subscription), $options{subscriptionId});
 
+check_timeout();
+
 # Prepare ACS
 ensure_resource_group($options{acsResourceGroup}, $options{location});
 ensure_acs($options{acsResourceGroup}, $options{acsK8sName});
 $options{'k8sMasterHost'} = checked_output(qw(az acs show --query masterProfile.fqdn --output tsv -g), $options{acsResourceGroup}, '-n', $options{acsK8sName});
 throw_if_empty('K8s master host', $options{'k8sMasterHost'});
 add_nsg_rule($options{acsResourceGroup}, @{$options{nsgAllowHost}});
+
+check_timeout();
 
 # Prepare ACR
 ensure_resource_group($options{acrResourceGroup}, $options{location});
@@ -217,19 +232,29 @@ checked_run(qw(docker pull nginx));
 checked_run(qw(docker tag nginx), $options{acrPrivateImageName});
 checked_run(qw(docker push), $options{acrPrivateImageName});
 
+check_timeout();
+
 # Prepare WebApp
 ensure_resource_group($options{webappResourceGroup}, $options{location});
 ensure_webapp($options{webappResourceGroup}, $options{webappPlan}, $options{webappName}, 'linux');
 
+check_timeout();
+
 ensure_resource_group($options{webappwinResourceGroup}, $options{location});
 ensure_webapp($options{webappwinResourceGroup}, $options{webappwinPlan}, $options{webappwinName});
+
+check_timeout();
 
 # Prepare Function
 ensure_resource_group($options{funcResourceGroup}, $options{location});
 ensure_function($options{funcResourceGroup}, $options{funcStorageAccount}, $options{funcName});
 
+check_timeout();
+
 # VM Agents
 ensure_resource_group($options{vmResourceGroup}, $options{location});
+
+check_timeout();
 
 our @created_resource_groups;
 sub ensure_resource_group {
@@ -477,6 +502,8 @@ my %status_for_job;
 my $last_checked_time = time();
 
 while (1) {
+    check_timeout();
+
     my @ready = $sel->can_read(5);
     for my $handle (@ready) {
         my $bytes = sysread($handle, $buffer, 4096);
@@ -608,6 +635,8 @@ jenkins-smoke-test.pl [options]
 
    --nsgAllowHost               Comma separated hosts that needs to be allowed for SSH access in the newly
                                 created Kubernetes master network security group
+
+   --timeout                    Timeout for the entire task in seconds, default 3600
 
  <Miscellaneous>
    --[no]clean                  Whether to delete the related resource groups at the end of the script.
