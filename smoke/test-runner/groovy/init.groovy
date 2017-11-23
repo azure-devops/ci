@@ -128,20 +128,45 @@ static void setupVmCloud(String azureCredentialId) {
             "Ubuntu 16.04 LTS",
             true,
             true,
-            true,
-            "Linux",
-            "basic",
             false,
-            new AzureVMAgentTemplate.ImageReferenceTypeClass("", "", "", "", ""),
+            "Linux",
+            "advanced",
+            true,
+            new AzureVMAgentTemplate.ImageReferenceTypeClass(null, "Canonical", "UbuntuServer", "16.04-LTS", "latest"),
             "SSH",
             true,
-            "",
+            '''
+set -x
+# Install Java
+sudo add-apt-repository ppa:openjdk-r/ppa -y
+sudo apt-get -y update
+sudo apt-get install openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk -y
+
+# Install Git
+sudo apt-get install -y git
+
+# Install Maven
+sudo curl -O https://archive.apache.org/dist/maven/maven-3/3.5.2/binaries/apache-maven-3.5.2-bin.tar.gz
+sudo tar zxvf apache-maven-3.5.2-bin.tar.gz -C /opt/
+sudo ln -s /opt/apache-maven-3.5.2/bin/mvn /usr/bin/mvn
+
+# Install Docker
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get -y update
+sudo apt-get install -y docker-ce
+
+sudo gpasswd -a '$$adminUser$$' docker
+sudo chmod g+rw /var/run/docker.sock
+set +x
+''',
             Config.vmCredential.id,
             "",
             "",
             "",
             false,
-            "",
+            '$$vmNsg$$',
             "",
             "",
             new AzureVMCloudRetensionStrategy(60),

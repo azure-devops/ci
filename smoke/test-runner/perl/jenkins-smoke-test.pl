@@ -80,6 +80,7 @@ GetOptions(\%options,
     'funcName|func-name=s',
     # options for VM Agents
     'vmResourceGroup|vm-resource-group=s',
+    'vmNsg|vm-nsg=s',
     'targetDir|target-dir=s',
     'artifactsDir|artifacts-dir=s',
     'nsgAllowHost|nsg-allow-host=s@',
@@ -127,6 +128,7 @@ normalize('funcName', 'func-');
 
 # Options for VM Agents
 normalize('vmResourceGroup', 'jksmoke-vm-');
+normalize('vmNsg', 'jksmoke-vm-nsg-');
 
 if (not $options{targetDir}) {
     $options{targetDir} = File::Spec->catfile(abs_path("$Bin/.."), ".target");
@@ -253,6 +255,8 @@ check_timeout();
 
 # VM Agents
 ensure_resource_group($options{vmResourceGroup}, $options{location});
+ensure_nsg($options{vmResourceGroup}, $options{vmNsg});
+ensure_nsg_access($options{vmResourceGroup}, $options{vmNsg}, @{$options{nsgAllowHost}});
 
 check_timeout();
 
@@ -353,6 +357,75 @@ sub ensure_function {
     }
 }
 
+sub ensure_nsg {
+    my ($resource_group, $nsg) = @_;
+
+    my $nsg_info = checked_output(qw(az network nsg show --resource-group), $resource_group, '--name', $nsg);
+    if ($nsg_info =~ /^\s*$/) {
+        checked_run(qw(az network nsg create --resource-group), $resource_group, '--name', $nsg);
+    }
+}
+
+sub next_nsg_priority {
+    my ($resource_group, $nsg) = @_;
+
+    my $priorities = checked_output(qw(az network nsg rule list --query [].priority --output tsv),
+        '--resource-group', $resource_group, '--nsg-name', $nsg);
+    my %used_priority = map { s/^\s+|\s+$//g; ($_, 1) } split(/\r?\n/, $priorities);
+
+    for my $priority (100..4096) {
+        if (not exists $used_priority{$priority}) {
+            return $priority;
+        }
+    }
+
+    die "Unable to find available priority value in NSG $resource_group/$nsg";
+}
+
+sub ensure_nsg_access {
+    my ($resource_group, $nsg, @hosts) = @_;
+
+    for my $host (@hosts) {
+        $host =~ s/^\s+|\s+$//g;
+        if ($host !~ /^\d+(\.\d+){3}$/) {
+            my $ip = inet_ntoa(inet_aton($host));
+            log_info("Resolved $host to ip address $ip");
+            $host = $ip;
+        }
+        my $name = 'allow_' . join('_', $host =~ /([-_\w\d\.]+)/g) . '_22';
+        my $rule_exists = checked_output(qw(az network nsg rule show),
+            '--resource-group', $resource_group,
+            '--nsg-name', $nsg,
+            '--name', $name);
+        if ($rule_exists !~ /^\s*$/) {
+            next;
+        }
+
+        my $created = 0;
+        for (1..5) {
+            my $priority = next_nsg_priority($resource_group, $nsg);
+
+            my $ret = run_shell(qw(az network nsg rule create --destination-port-ranges 22),
+                '--resource-group', $resource_group,
+                '--nsg-name', $nsg,
+                '--name', $name,
+                '--source-address-prefixes', $host,
+                '--priority', $priority);
+
+            if ($ret == 0) {
+                $created = 1;
+                last;
+            }
+            log_warning("Unable to create NSG exceptional rule for host $host in $resource_group/$nsg, retry after 5 seconds");
+            sleep 5;
+        }
+
+        if (not $created) {
+            die "Failed to create NSG exceptional rule for host $host in $resource_group/$nsg";
+        }
+    }
+}
+
 sub add_nsg_rule {
     my $resource_group = shift;
     my @hosts = @_;
@@ -366,29 +439,9 @@ sub add_nsg_rule {
         log_warning("No Kubernetes master network security group found in resource group $resource_group.");
     } else {
         log_info("Found master network security group(s) in resource group $resource_group: " . join(', ', @master_nsgs));
-        for my $host (@hosts) {
-            $host =~ s/^\s+|\s+$//g;
-            if ($host !~ /^\d+(\.\d+){3}$/) {
-                my $ip = inet_ntoa(inet_aton($host));
-                log_info("Resolved $host to ip address $ip");
-                $host = $ip;
-            }
-            my $name = 'allow_' . join('_', $host =~ /([\w\d]+)/g) . '_22';
-            for my $nsg (@master_nsgs) {
-                my $rule_exists = checked_output(qw(az network nsg rule show),
-                    '--resource-group', $resource_group,
-                    '--nsg-name', $nsg,
-                    '--name', $name);
-                if ($rule_exists !~ /^\s*$/) {
-                    next;
-                }
-                # chose a fixed priority 2017. it is not ideal but should be enough for the smoke test
-                checked_run(qw(az network nsg rule create --priority 2017 --destination-port-ranges 22),
-                    '--resource-group', $resource_group,
-                    '--nsg-name', $nsg,
-                    '--name', $name,
-                    '--source-address-prefixes', $host);
-            }
+
+        for my $nsg (@master_nsgs) {
+            ensure_nsg_access($resource_group, $nsg, @hosts);
         }
     }
 }
