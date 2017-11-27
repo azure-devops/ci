@@ -110,13 +110,22 @@ sub _dump_status {
     $final_result;
 }
 
+# Terminate the Jenkins process and dump the final result.
+# The method accepts the kill command line as arguments. If not specified, 'kill SIGTERM' will be used.
+# It's known that we may lose some logs files (logs/slaves/*/slave.log) if we terminate the Jenkins running
+# in Docker in this way. So it's more prefered to use specific terminate command instead.
 sub terminate {
     my $self = shift;
+    my @command_line = @_;
 
     my $pid = $self->{pid};
 
-    log_info("Send SIGTERM to the Jenkins docker container process with pid $pid...");
-    kill 'TERM', $pid;
+    if (@command_line) {
+        checked_run(@command_line);
+    } else {
+        log_info("Send SIGTERM to the Jenkins docker container process with pid $pid...");
+        kill 'TERM', $pid;
+    }
 
     log_info("Wait for the process with pid $pid to terminate...");
     waitpid $pid, 0;
