@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License. See LICENSE in the project root for license information.
+-->
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command><![CDATA[
+mkdir -p acs/kubernetes
+cat >acs/kubernetes/acs-k8s-public.yml <<'EOF'
+---
+apiVersion: v1
+kind: List
+items:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: acs-k8s-public-service
+    labels:
+      app: acs-k8s-public
+  spec:
+    type: LoadBalancer
+    selector:
+      app: acs-k8s-public
+    ports:
+      - port: 80
+        targetPort: 80
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    name: acs-k8s-public-deployment
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: acs-k8s-public
+      spec:
+        containers:
+        - name: acs-k8s-public-container
+          image: nginx
+          ports:
+          - containerPort: 80
+EOF
+]]></command>
+    </hudson.tasks.Shell>
+    <com.microsoft.jenkins.acs.ACSDeploymentBuilder plugin="azure-acs@0.1.4">
+      <context>
+        <azureCredentialsId>sp</azureCredentialsId>
+        <resourceGroupName>$$acsResourceGroup$$</resourceGroupName>
+        <containerService>$$acsK8sName$$ | Kubernetes</containerService>
+        <sshCredentialsId>ssh-credential</sshCredentialsId>
+        <configFilePaths>acs/kubernetes/acs-k8s-public.yml</configFilePaths>
+        <enableConfigSubstitution>false</enableConfigSubstitution>
+        <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
+        <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>
+      </context>
+    </com.microsoft.jenkins.acs.ACSDeploymentBuilder>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

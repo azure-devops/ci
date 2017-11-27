@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.15">
+    <actions/>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+            <triggers/>
+        </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+    </properties>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.41">
+        <script><![CDATA[
+node {
+    stage('Prepare') {
+        sh '''
+mkdir -p acs/kubernetes
+cat >acs/kubernetes/acs-k8s-public-pipeline.yml <<'EOF'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: acs-k8s-public-pipeline-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acs-k8s-public-pipeline
+    spec:
+      containers:
+      - name: acs-k8s-public-pipeline-container
+        image: nginx
+        ports:
+        - containerPort: 80
+EOF
+'''
+    }
+
+    stage('Deploy') {
+        acsDeploy azureCredentialsId: 'sp',
+            resourceGroupName: '$$acsResourceGroup$$',
+            containerService: '$$acsK8sName$$ | Kubernetes',
+            sshCredentialsId: 'ssh-credential',
+            configFilePaths: 'acs/kubernetes/acs-k8s-public-pipeline.yml'
+    }
+}
+]]></script>
+        <sandbox>true</sandbox>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>

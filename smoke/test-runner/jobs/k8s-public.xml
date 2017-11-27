@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command><![CDATA[
+mkdir -p kubernetes
+cat >kubernetes/k8s-public.yml<<'EOF'
+---
+apiVersion: v1
+kind: List
+items:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: k8s-public-service
+    labels:
+      app: k8s-public
+  spec:
+    type: LoadBalancer
+    selector:
+      app: k8s-public
+    ports:
+      - port: 80
+        targetPort: 80
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    name: k8s-public-deployment
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: k8s-public
+      spec:
+        containers:
+        - name: k8s-public-container
+          image: nginx
+          ports:
+          - containerPort: 80
+EOF
+]]></command>
+    </hudson.tasks.Shell>
+    <com.microsoft.jenkins.kubernetes.KubernetesDeploy plugin="kubernetes-cd@0.1.4">
+      <context>
+        <credentialsType>SSH</credentialsType>
+        <ssh>
+          <sshServer>$$k8sMasterHost$$</sshServer>
+          <sshCredentialsId>ssh-credential</sshCredentialsId>
+        </ssh>
+        <configs>kubernetes/k8s-public.yml</configs>
+        <enableConfigSubstitution>true</enableConfigSubstitution>
+        <secretName></secretName>
+      </context>
+    </com.microsoft.jenkins.kubernetes.KubernetesDeploy>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

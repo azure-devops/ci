@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.TextParameterDefinition>
+          <name>MSG</name>
+          <description></description>
+          <defaultValue>azure</defaultValue>
+        </hudson.model.TextParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.6.4">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/mrichman/go-docker-microservice-demo.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <assignedNode>docker</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>sed -i &quot;s/world/$MSG/g&quot; main.go</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <com.microsoft.jenkins.appservice.WebAppDeploymentRecorder plugin="azure-app-service@0.1.3">
+      <azureCredentialsId>sp</azureCredentialsId>
+      <resourceGroup>$$webappResourceGroup$$</resourceGroup>
+      <appName>$$webappName$$</appName>
+      <filePath></filePath>
+      <sourceDirectory></sourceDirectory>
+      <targetDirectory></targetDirectory>
+      <deployOnlyIfSuccessful>true</deployOnlyIfSuccessful>
+      <publishType>docker</publishType>
+      <dockerImageName>$$acrHost$$/web-app</dockerImageName>
+      <dockerImageTag></dockerImageTag>
+      <dockerFilePath>**/Dockerfile</dockerFilePath>
+      <dockerRegistryEndpoint plugin="docker-commons@1.9">
+        <url>$$acrHost$$</url>
+        <credentialsId>acr</credentialsId>
+      </dockerRegistryEndpoint>
+      <deleteTempImage>true</deleteTempImage>
+      <slotName></slotName>
+    </com.microsoft.jenkins.appservice.WebAppDeploymentRecorder>
+  </publishers>
+  <buildWrappers/>
+</project>

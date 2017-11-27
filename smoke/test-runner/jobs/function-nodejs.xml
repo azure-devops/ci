@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>echo &quot;{}&quot; &gt; host.json
+
+mkdir -p fire
+cat &gt; &quot;fire/function.json&quot; &lt;&lt;EOF
+{
+  &quot;bindings&quot;: [
+    {
+      &quot;authLevel&quot;: &quot;anonymous&quot;,
+      &quot;type&quot;: &quot;httpTrigger&quot;,
+      &quot;direction&quot;: &quot;in&quot;,
+      &quot;name&quot;: &quot;req&quot;
+    },
+    {
+      &quot;type&quot;: &quot;http&quot;,
+      &quot;direction&quot;: &quot;out&quot;,
+      &quot;name&quot;: &quot;res&quot;
+    }
+  ],
+  &quot;disabled&quot;: false
+}
+EOF
+
+cat &gt; &quot;fire/index.js&quot; &lt;&lt;EOF
+module.exports = function (context, req) {
+    context.log(&apos;JavaScript HTTP trigger function processed a request.&apos;);
+
+    if (req.query.name || (req.body &amp;&amp; req.body.name)) {
+        context.res = {
+            // status: 200, /* Defaults to 200 */
+            body: &quot;Welcome &quot; + (req.query.name || req.body.name)
+        };
+    }
+    else {
+        context.res = {
+            status: 400,
+            body: &quot;Please pass a name on the query string or in the request body&quot;
+        };
+    }
+    context.done();
+};
+EOF</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <com.microsoft.jenkins.function.FunctionAppDeploymentRecorder plugin="azure-function@0.1.2">
+      <azureCredentialsId>sp</azureCredentialsId>
+      <resourceGroup>$$funcResourceGroup$$</resourceGroup>
+      <appName>$$funcName$$</appName>
+      <filePath>**/*.js,**/*.json</filePath>
+      <sourceDirectory></sourceDirectory>
+      <targetDirectory></targetDirectory>
+      <deployOnlyIfSuccessful>true</deployOnlyIfSuccessful>
+    </com.microsoft.jenkins.function.FunctionAppDeploymentRecorder>
+  </publishers>
+  <buildWrappers/>
+</project>

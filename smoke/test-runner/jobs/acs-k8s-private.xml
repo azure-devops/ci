@@ -1,0 +1,72 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <hudson.tasks.Shell>
+            <command><![CDATA[
+mkdir -p acs/kubernetes
+cat >acs/kubernetes/acs-k8s-private.yml <<'EOF'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: acs-k8s-private-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acs-k8s-private
+    spec:
+      containers:
+      - name: acs-k8s-private-container
+        image: $ACR_PRIVATE_IMAGE_NAME
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+      - name: $KUBERNETES_SECRET_NAME
+EOF
+]]></command>
+        </hudson.tasks.Shell>
+        <com.microsoft.jenkins.acs.ACSDeploymentBuilder plugin="azure-acs@0.1.4">
+            <context>
+                <azureCredentialsId>sp</azureCredentialsId>
+                <resourceGroupName>$$acsResourceGroup$$</resourceGroupName>
+                <containerService>$$acsK8sName$$ | Kubernetes</containerService>
+                <sshCredentialsId>ssh-credential</sshCredentialsId>
+                <configFilePaths>acs/kubernetes/acs-k8s-private.yml</configFilePaths>
+                <enableConfigSubstitution>true</enableConfigSubstitution>
+                <swarmRemoveContainersFirst>false</swarmRemoveContainersFirst>
+                <secretName>nginx-private-secret</secretName>
+                <dcosDockerCredenditalsPathShared>false</dcosDockerCredenditalsPathShared>
+                <containerRegistryCredentials>
+                    <org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint plugin="docker-commons@1.9">
+                        <url>http://$$acrHost$$</url>
+                        <credentialsId>acr</credentialsId>
+                    </org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint>
+                </containerRegistryCredentials>
+            </context>
+        </com.microsoft.jenkins.acs.ACSDeploymentBuilder>
+    </builders>
+    <publishers/>
+    <buildWrappers>
+        <EnvInjectBuildWrapper plugin="envinject@2.1.5">
+            <info>
+                <propertiesContent>ACR_PRIVATE_IMAGE_NAME=$$acrPrivateImageName$$</propertiesContent>
+                <secureGroovyScript plugin="script-security@1.35">
+                    <script></script>
+                    <sandbox>false</sandbox>
+                </secureGroovyScript>
+                <loadFilesFromMaster>false</loadFilesFromMaster>
+            </info>
+        </EnvInjectBuildWrapper>
+    </buildWrappers>
+</project>
